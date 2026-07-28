@@ -152,32 +152,6 @@ def row_matches(row, view_filters, skipped):
     return True
 
 
-def fetch_page(hostname, endpoint, headers, view, page, size, retries=4):
-    url = f"https://{hostname}{endpoint}"
-    body = {}  # fetch all; filtering happens client-side
-    params = {"page": page, "size": size, "sort": sort_param(view)}
-    last_err = None
-    for attempt in range(1, retries + 1):
-        try:
-            r = requests.post(url, headers=headers, params=params, json=body,
-                              timeout=120)
-            break
-        except (requests.Timeout, requests.ConnectionError) as e:
-            last_err = e
-            wait = 3 * attempt
-            print(f"    page {page + 1} attempt {attempt} failed ({type(e).__name__}); "
-                  f"retrying in {wait}s...")
-            time.sleep(wait)
-    else:
-        sys.exit(f"Gave up on page {page + 1} after {retries} retries: {last_err}")
-    if r.status_code == 403:
-        sys.exit(f"403 at {endpoint} - token not authorized for this endpoint.\n"
-                 f"{r.text[:300]}")
-    if r.status_code >= 400:
-        sys.exit(f"{r.status_code} at {endpoint}: {r.text[:400]}")
-    return r.json()
-
-
 def rows_from(data):
     if isinstance(data, dict):
         for k in ("content", "data", "items", "results"):
@@ -188,23 +162,143 @@ def rows_from(data):
     return [], data
 
 
-def fetch_all(hostname, endpoint, headers, view):
-    all_rows, page = [], 0
-    while True:
-        data = fetch_page(hostname, endpoint, headers, view, page, PAGE_SIZE)
-        rows, meta = rows_from(data)
-        all_rows.extend(rows)
-        total_pages = meta.get("totalPages")
-        is_last = meta.get("last")
-        print(f"  page {page + 1}"
-              + (f"/{total_pages}" if total_pages else "")
-              + f": {len(rows)} rows")
-        if is_last is True or not rows:
-            break
-        if total_pages is not None and page + 1 >= total_pages:
-            break
-        page += 1
-    return all_rows
+# ---- one page, single attempt, classified outcome ------------------------- #
+def fetch_page(hostname, endpoint, headers, view, page, size, timeout=120):
+    """One request. Returns a dict describing the outcome (never raises for
+    HTTP/network issues the controller should react to)."""
+    url = f"https://{hostname}{endpoint}"
+    params = {"page": page, "size": size, "sort": sort_param(view)}
+    try:
+        r = requests.post(url, headers=headers, params=params, json={}, timeout=timeout)
+    except (requests.Timeout, requests.ConnectionError) as e:
+        return {"page": page, "kind": "timeout", "detail": type(e).__name__}
+    if r.status_code == 429:
+        ra = r.headers.get("Retry-After")
+        try:
+            ra = float(ra)
+        except (TypeError, ValueError):
+            ra = None
+        return {"page": page, "kind": "429", "retry_after": ra}
+    if r.status_code in (401, 403):
+        return {"page": page, "kind": "fatal",
+                "detail": f"{r.status_code} not authorized: {r.text[:200]}"}
+    if r.status_code >= 500:
+        return {"page": page, "kind": "server", "detail": f"{r.status_code}"}
+    if r.status_code >= 400:
+        return {"page": page, "kind": "fatal", "detail": f"{r.status_code}: {r.text[:200]}"}
+    rows, meta = rows_from(r.json())
+    return {"page": page, "kind": "ok", "rows": rows, "meta": meta}
+
+
+def _backoff(attempt):
+    """Exponential backoff with full jitter, capped at 30s."""
+    import random
+    return min(30.0, 2.0 ** attempt) * (0.5 + random.random() / 2)
+
+
+# ---- adaptive parallel fetch (AIMD + Retry-After + backoff/jitter) --------- #
+def fetch_all(hostname, endpoint, headers, view,
+              start=4, cap=12, increase_every=8, max_attempts=6):
+    import concurrent.futures as cf
+    import heapq
+
+    # bootstrap: page 0 tells us total pages
+    first = fetch_page(hostname, endpoint, headers, view, 0, PAGE_SIZE)
+    if first["kind"] == "fatal":
+        sys.exit(f"{endpoint}: {first['detail']}")
+    if first["kind"] != "ok":
+        # transient on first call - one plain retry
+        time.sleep(3)
+        first = fetch_page(hostname, endpoint, headers, view, 0, PAGE_SIZE)
+        if first["kind"] != "ok":
+            sys.exit(f"Could not fetch page 1: {first.get('detail', first['kind'])}")
+    meta = first["meta"]
+    total_pages = meta.get("totalPages")
+    results = {0: first["rows"]}
+    if not total_pages or total_pages <= 1:
+        return first["rows"]
+
+    print(f"  total pages: {total_pages}. Fetching with adaptive concurrency...")
+    MIN = 1
+    target = start
+    streak = 0
+    attempts = {}
+    ready = list(range(1, total_pages))
+    scheduled = []          # min-heap of (not_before, page)
+    paused_until = 0.0
+    failed = []
+    done_count = 1
+
+    ex = cf.ThreadPoolExecutor(max_workers=cap)
+    futures = {}
+    try:
+        while ready or scheduled or futures:
+            now = time.monotonic()
+            # move due scheduled pages back to ready
+            while scheduled and scheduled[0][0] <= now:
+                _, p = heapq.heappop(scheduled)
+                ready.append(p)
+            # submit while under target and not globally paused
+            while ready and len(futures) < target and now >= paused_until:
+                p = ready.pop()
+                fut = ex.submit(fetch_page, hostname, endpoint, headers, view, p, PAGE_SIZE)
+                futures[fut] = p
+            if not futures:
+                # nothing in flight; sleep until next scheduled/pause
+                waits = [paused_until - now] if paused_until > now else []
+                if scheduled:
+                    waits.append(scheduled[0][0] - now)
+                time.sleep(max(0.05, min([w for w in waits if w > 0] or [0.05])))
+                continue
+            done, _ = cf.wait(futures, timeout=0.5,
+                              return_when=cf.FIRST_COMPLETED)
+            for fut in done:
+                p = futures.pop(fut)
+                o = fut.result()
+                kind = o["kind"]
+                if kind == "ok":
+                    results[p] = o["rows"]
+                    done_count += 1
+                    streak += 1
+                    if streak >= increase_every and target < cap:
+                        target += 1
+                        streak = 0
+                    if done_count % 10 == 0 or done_count == total_pages:
+                        print(f"    {done_count}/{total_pages} pages  (concurrency={target})")
+                elif kind == "429":
+                    target = max(MIN, target // 2)
+                    streak = 0
+                    ra = o.get("retry_after")
+                    delay = ra if ra else _backoff(attempts.get(p, 0) + 1)
+                    paused_until = max(paused_until, time.monotonic() + (ra or 0))
+                    attempts[p] = attempts.get(p, 0) + 1
+                    print(f"    429 on page {p + 1} -> concurrency={target}, "
+                          f"pausing {delay:.1f}s")
+                    if attempts[p] > max_attempts:
+                        failed.append(p)
+                    else:
+                        heapq.heappush(scheduled, (time.monotonic() + delay, p))
+                elif kind in ("timeout", "server"):
+                    # transient, NOT a rate-limit -> retry, don't cut concurrency
+                    attempts[p] = attempts.get(p, 0) + 1
+                    if attempts[p] > max_attempts:
+                        failed.append(p)
+                    else:
+                        heapq.heappush(scheduled,
+                                       (time.monotonic() + _backoff(attempts[p]), p))
+                else:  # fatal
+                    sys.exit(f"Page {p + 1}: {o.get('detail')}")
+    finally:
+        ex.shutdown(wait=False)
+
+    if failed:
+        print(f"*** WARNING: {len(failed)} page(s) failed after retries: "
+              f"{sorted(pp + 1 for pp in failed)}. CSV will be missing those rows.")
+
+    ordered = []
+    for i in range(total_pages):
+        ordered.extend(results.get(i, []))
+    return ordered
 
 
 def flatten(row, prefix=""):
@@ -249,6 +343,10 @@ def main():
                     help=f"Grid endpoint (default {DEFAULT_ENDPOINT}).")
     ap.add_argument("--dump", action="store_true",
                     help="Print the first raw response and exit (no CSV).")
+    ap.add_argument("--start-concurrency", type=int, default=4,
+                    help="Initial parallel page count (AIMD floor probe).")
+    ap.add_argument("--max-concurrency", type=int, default=12,
+                    help="Max parallel pages (AIMD cap).")
     ap.add_argument("--hostname")
     ap.add_argument("--token")
     ap.add_argument("--client-id")
@@ -269,13 +367,21 @@ def main():
 
     if args.dump:
         print(f"--- sort param: {sort_param(view)} ---\n")
-        data = fetch_page(hostname, args.endpoint, headers, view, 0, 2)
-        print("--- response ---")
-        print(json.dumps(data, ensure_ascii=False, indent=2)[:4000])
+        o = fetch_page(hostname, args.endpoint, headers, view, 0, 2)
+        print(f"--- outcome: {o['kind']} ---")
+        if o["kind"] == "ok":
+            print(json.dumps({"meta_keys": [k for k in o["meta"] if k != "content"],
+                              "totalPages": o["meta"].get("totalPages"),
+                              "totalElements": o["meta"].get("totalElements"),
+                              "sample": o["rows"][:1]},
+                             ensure_ascii=False, indent=2)[:4000])
+        else:
+            print(json.dumps(o, ensure_ascii=False, indent=2)[:1000])
         return
 
     print("Fetching all risks (filtering happens locally)...")
-    all_rows = fetch_all(hostname, args.endpoint, headers, view)
+    all_rows = fetch_all(hostname, args.endpoint, headers, view,
+                         start=args.start_concurrency, cap=args.max_concurrency)
 
     view_filters = view.get("filters", [])
     skipped = set()
