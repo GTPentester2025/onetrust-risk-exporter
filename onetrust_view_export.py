@@ -410,11 +410,22 @@ def write_csv(rows, out_path, headers=None):
             for k in r:
                 if k not in headers:
                     headers.append(k)
-    with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
-        w = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows)
-    print(f"\nSaved: {out_path}  ({len(rows)} rows, {len(headers)} columns)")
+    # Windows locks a file that's open in Excel -> fall back to a new name.
+    target = out_path
+    for attempt in range(10):
+        try:
+            with open(target, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore")
+                w.writeheader()
+                w.writerows(rows)
+            break
+        except PermissionError:
+            base, ext = os.path.splitext(out_path)
+            target = f"{base}_{attempt + 1}{ext}"
+            print(f"    (file locked, trying {target})")
+    else:
+        sys.exit(f"Could not write CSV - close {out_path} in Excel and retry.")
+    print(f"\nSaved: {target}  ({len(rows)} rows, {len(headers)} columns)")
 
 
 # --------------------------------------------------------------------------- #
