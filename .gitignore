@@ -11,9 +11,8 @@ venv/
 # Secrets / local config
 .env
 
-# View filter files - keep local only, never on git
+# Real view filters (production UUIDs) - keep local only, never on git
 views.json
-views.example.json
 v*_results.txt
 
 # Local tooling / misc

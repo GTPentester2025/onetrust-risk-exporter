@@ -1,0 +1,23 @@
+{
+  "_comment": "Copy this to views.json and fill in real filters captured from the UI. views.json is gitignored so your production UUIDs stay local. Filter field names + flat UUID values match the UI export payload.",
+  "views": [
+    {
+      "name": "Example View",
+      "filters": [
+        { "field": "approvers", "operator": "EQUAL_TO",
+          "value": ["00000000-0000-0000-0000-000000000001",
+                    "00000000-0000-0000-0000-000000000002"] },
+        { "field": "organization", "operator": "EQUAL_TO",
+          "value": ["00000000-0000-0000-0000-0000000000aa"] },
+        { "field": "inherentLevel", "operator": "EQUAL_TO",
+          "value": ["00000000-0000-0000-0000-0000000000ff"] }
+      ],
+      "visibleColumns": ["id", "number", "riskName", "source", "owners",
+                         "description", "treatmentPlan", "organization", "stage",
+                         "inherentScore", "inherentLevel", "residualScore",
+                         "residualLevel", "createDT", "riskCategories", "result",
+                         "dateClosed", "approvers"],
+      "sortInfo": { "columnName": "createdDate", "ascending": false }
+    }
+  ]
+}
