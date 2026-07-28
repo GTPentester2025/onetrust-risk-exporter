@@ -32,6 +32,7 @@ import getpass
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import requests  # pip install requests
@@ -151,11 +152,24 @@ def row_matches(row, view_filters, skipped):
     return True
 
 
-def fetch_page(hostname, endpoint, headers, view, page, size):
+def fetch_page(hostname, endpoint, headers, view, page, size, retries=4):
     url = f"https://{hostname}{endpoint}"
     body = {}  # fetch all; filtering happens client-side
     params = {"page": page, "size": size, "sort": sort_param(view)}
-    r = requests.post(url, headers=headers, params=params, json=body, timeout=60)
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            r = requests.post(url, headers=headers, params=params, json=body,
+                              timeout=120)
+            break
+        except (requests.Timeout, requests.ConnectionError) as e:
+            last_err = e
+            wait = 3 * attempt
+            print(f"    page {page + 1} attempt {attempt} failed ({type(e).__name__}); "
+                  f"retrying in {wait}s...")
+            time.sleep(wait)
+    else:
+        sys.exit(f"Gave up on page {page + 1} after {retries} retries: {last_err}")
     if r.status_code == 403:
         sys.exit(f"403 at {endpoint} - token not authorized for this endpoint.\n"
                  f"{r.text[:300]}")
