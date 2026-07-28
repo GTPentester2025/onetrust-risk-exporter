@@ -18,3 +18,4 @@ v*_results.txt
 # Local tooling / misc
 .claude/
 *.zip
+sample_row.json

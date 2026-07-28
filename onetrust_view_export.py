@@ -111,24 +111,41 @@ def resolve_auth(args):
 # response fields. Each view filter field maps to a way of pulling the matching
 # id(s) out of a risk row. Returns None if the row has no usable value for that
 # field (then the filter is skipped for that row, with a warning printed once).
-def extract_ids(row, field):
-    f = field.lower()
-    if f in ("organization", "orggroup", "organizationid", "orggroupid"):
-        og = row.get("orgGroup") or {}
-        return [og.get("id")] if og.get("id") else None
-    if f in ("approvers", "approver", "riskapprover", "riskapprovers", "approverid"):
-        ids = row.get("riskApproversId")
-        return ids if isinstance(ids, list) and ids else None
-    if f in ("owners", "owner", "riskowner", "riskowners"):
-        ids = row.get("riskOwnersId")
-        return ids if isinstance(ids, list) and ids else None
-    if f in ("inherentlevel", "inherentriskscore", "inherentrisklevel"):
-        il = row.get("inherentRiskLevel") or {}
-        guid = il.get("levelGuid")
-        return [guid] if guid else None      # often null -> unmatchable
-    if f in ("stage", "state"):
-        return [row.get("state")] if row.get("state") else None
-    return None  # unmapped field
+# Each view filter field -> how to pull the row's comparable value(s), and
+# whether we compare against the filter values' UUIDs ("value") or labels
+# ("label"). Level fields have a null levelGuid in the grid response, so they
+# must be matched by label against the level string ("HIGH", etc).
+def _level(row, key):
+    lvl = (row.get(key) or {}).get("level")
+    return [lvl.upper()] if lvl else []
+
+
+FIELD_RULES = {
+    "organization":      (lambda r: [(r.get("orgGroup") or {}).get("id")], "value"),
+    "riskapprover":      (lambda r: r.get("riskApproversId") or [], "value"),
+    "approvers":         (lambda r: r.get("riskApproversId") or [], "value"),
+    "riskowner":         (lambda r: r.get("riskOwnersId") or [], "value"),
+    "owners":            (lambda r: r.get("riskOwnersId") or [], "value"),
+    "inherentriskscore": (lambda r: _level(r, "inherentRiskLevel"), "label"),
+    "inherentlevel":     (lambda r: _level(r, "inherentRiskLevel"), "label"),
+    "residualriskscore": (lambda r: _level(r, "residualRiskLevel"), "label"),
+    "residuallevel":     (lambda r: _level(r, "residualRiskLevel"), "label"),
+    "stage":             (lambda r: [r.get("state")] if r.get("state") else [], "value"),
+}
+
+
+def _filter_values(f):
+    """Return the filter's allowed values in both id and label form."""
+    ids, labels = set(), set()
+    for v in f.get("value", []):
+        if isinstance(v, dict):
+            if v.get("value"):
+                ids.add(v["value"])
+            if v.get("label"):
+                labels.add(v["label"].upper())
+        else:
+            ids.add(v)
+    return ids, labels
 
 
 def sort_param(view):
@@ -138,18 +155,81 @@ def sort_param(view):
     return f"{col},{'asc' if asc else 'desc'}"
 
 
+def get_filters(view):
+    return view.get("activeFilters") or view.get("filters") or []
+
+
 def row_matches(row, view_filters, skipped):
-    """AND across filters; within a filter, row's id(s) must intersect allowed."""
+    """AND across filters; within a filter the row's value(s) must intersect."""
     for f in view_filters:
-        allowed = f.get("value")
-        allowed = set(allowed) if isinstance(allowed, list) else {allowed}
-        ids = extract_ids(row, f.get("field", ""))
-        if ids is None:
-            skipped.add(f.get("field"))   # can't evaluate -> don't exclude
+        field = (f.get("field") or "").lower()
+        rule = FIELD_RULES.get(field)
+        if not rule:
+            skipped.add(f.get("field"))   # unmappable -> don't exclude
             continue
-        if not (set(ids) & allowed):
+        accessor, mode = rule
+        row_vals = [x for x in accessor(row) if x not in (None, "")]
+        ids, labels = _filter_values(f)
+        allowed = labels if mode == "label" else ids
+        if not (set(row_vals) & allowed):
             return False
     return True
+
+
+# --- column projection: view column name -> (CSV header, value accessor) ---- #
+def _names(lst):
+    if not isinstance(lst, list):
+        return ""
+    out = []
+    for x in lst:
+        if isinstance(x, dict):
+            out.append(x.get("name") or x.get("label") or x.get("value") or "")
+        else:
+            out.append(str(x))
+    return "; ".join(o for o in out if o)
+
+
+COLUMN_MAP = {
+    "id":                ("ID", lambda r: r.get("id")),
+    "riskname":          ("Risk name", lambda r: r.get("name") or r.get("riskName")
+                          or r.get("title")),
+    "source":            ("Source", lambda r: (r.get("source") or {}).get("name")),
+    "riskowner":         ("Risk owners", lambda r: r.get("riskOwnersName")
+                          or _names(r.get("riskOwners"))),
+    "riskowners":        ("Risk owners", lambda r: r.get("riskOwnersName")
+                          or _names(r.get("riskOwners"))),
+    "description":       ("Description", lambda r: r.get("description")),
+    "treatmentplan":     ("Treatment plan", lambda r: r.get("treatment")
+                          or r.get("treatmentPlan")),
+    "organization":      ("Organization", lambda r: (r.get("orgGroup") or {}).get("name")),
+    "stage":             ("Stage", lambda r: r.get("stage") or r.get("state")),
+    "inherentriskscore": ("Inherent risk score",
+                          lambda r: (r.get("inherentRiskLevel") or {}).get("level")),
+    "residualriskscore": ("Residual risk score",
+                          lambda r: (r.get("residualRiskLevel")
+                                     or r.get("targetRiskLevel") or {}).get("level")),
+    "createddate":       ("Date created", lambda r: r.get("createdUTCDateTime")
+                          or r.get("createdDate")),
+    "category":          ("Category", lambda r: _names(r.get("categories"))),
+    "result":            ("Result", lambda r: r.get("result")),
+    "dateclosed":        ("Date closed", lambda r: r.get("dateClosed")
+                          or r.get("closedDate")),
+    "riskapprover":      ("Risk approver", lambda r: r.get("riskApprovers")),
+    "number":            ("Number", lambda r: r.get("number")),
+}
+
+
+def project_rows(rows, active_columns):
+    """Return (list-of-ordered-dicts, headers) using only the view's columns."""
+    headers, accessors = [], []
+    for col in active_columns:
+        header, acc = COLUMN_MAP.get(col.lower(), (col, lambda r, c=col: r.get(c)))
+        headers.append(header)
+        accessors.append(acc)
+    out = []
+    for r in rows:
+        out.append({h: a(r) for h, a in zip(headers, accessors)})
+    return out, headers
 
 
 def rows_from(data):
@@ -316,21 +396,22 @@ def flatten(row, prefix=""):
     return flat
 
 
-def write_csv(rows, out_path):
+def write_csv(rows, out_path, headers=None):
+    """rows: list of flat dicts. If headers given, use that exact column order."""
     if not rows:
         print("No rows returned. Nothing written.")
         return
-    flat = [flatten(r) for r in rows]
-    cols = []
-    for r in flat:
-        for k in r:
-            if k not in cols:
-                cols.append(k)
+    if headers is None:
+        headers = []
+        for r in rows:
+            for k in r:
+                if k not in headers:
+                    headers.append(k)
     with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
-        w = csv.DictWriter(f, fieldnames=cols)
+        w = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore")
         w.writeheader()
-        w.writerows(flat)
-    print(f"\nSaved: {out_path}  ({len(rows)} rows)")
+        w.writerows(rows)
+    print(f"\nSaved: {out_path}  ({len(rows)} rows, {len(headers)} columns)")
 
 
 # --------------------------------------------------------------------------- #
@@ -343,6 +424,10 @@ def main():
                     help=f"Grid endpoint (default {DEFAULT_ENDPOINT}).")
     ap.add_argument("--dump", action="store_true",
                     help="Print the first raw response and exit (no CSV).")
+    ap.add_argument("--sample", action="store_true",
+                    help="Write one full risk row to sample_row.json and exit.")
+    ap.add_argument("--all-columns", action="store_true",
+                    help="Output every field (flattened) instead of the view's columns.")
     ap.add_argument("--start-concurrency", type=int, default=4,
                     help="Initial parallel page count (AIMD floor probe).")
     ap.add_argument("--max-concurrency", type=int, default=12,
@@ -365,35 +450,41 @@ def main():
                "Accept": "application/json", "Content-Type": "application/json"}
     print(f"\nSelected view: {view['name']}")
 
-    if args.dump:
-        print(f"--- sort param: {sort_param(view)} ---\n")
+    if args.dump or args.sample:
         o = fetch_page(hostname, args.endpoint, headers, view, 0, 2)
-        print(f"--- outcome: {o['kind']} ---")
-        if o["kind"] == "ok":
-            print(json.dumps({"meta_keys": [k for k in o["meta"] if k != "content"],
-                              "totalPages": o["meta"].get("totalPages"),
-                              "totalElements": o["meta"].get("totalElements"),
-                              "sample": o["rows"][:1]},
-                             ensure_ascii=False, indent=2)[:4000])
-        else:
+        if o["kind"] != "ok":
             print(json.dumps(o, ensure_ascii=False, indent=2)[:1000])
+            return
+        if args.sample:
+            with open("sample_row.json", "w", encoding="utf-8") as f:
+                json.dump(o["rows"][0] if o["rows"] else {}, f,
+                          ensure_ascii=False, indent=2)
+            print("Wrote sample_row.json (one full risk row). Paste it back.")
+        else:
+            print(f"totalPages={o['meta'].get('totalPages')} "
+                  f"totalElements={o['meta'].get('totalElements')}")
+            print(json.dumps(o["rows"][:1], ensure_ascii=False, indent=2)[:4000])
         return
 
     print("Fetching all risks (filtering happens locally)...")
     all_rows = fetch_all(hostname, args.endpoint, headers, view,
                          start=args.start_concurrency, cap=args.max_concurrency)
 
-    view_filters = view.get("filters", [])
+    view_filters = get_filters(view)
     skipped = set()
     matched = [r for r in all_rows if row_matches(r, view_filters, skipped)]
     print(f"\nFetched {len(all_rows)} risks; {len(matched)} match the view filters.")
     if skipped:
-        print("*** WARNING: could not evaluate filter field(s) client-side: "
-              + ", ".join(sorted(skipped)))
-        print("    Those filters were NOT applied (results may be a superset).")
+        print("*** WARNING: could not evaluate filter field(s): "
+              + ", ".join(sorted(skipped)) + " (not applied).")
 
     out = args.out or f"risk_{view['name'].replace(' ', '_').lower()}.csv"
-    write_csv(matched, out)
+    active_columns = view.get("activeColumns")
+    if active_columns and not args.all_columns:
+        projected, hdrs = project_rows(matched, active_columns)
+        write_csv(projected, out, headers=hdrs)
+    else:
+        write_csv([flatten(r) for r in matched], out)
 
 
 if __name__ == "__main__":
