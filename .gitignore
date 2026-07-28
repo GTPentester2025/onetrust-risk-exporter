@@ -1,0 +1,21 @@
+# Generated exports
+*.csv
+risks_*.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secrets / local config
+.env
+
+# View filter files - keep local only, never on git
+views.json
+views.example.json
+v*_results.txt
+
+# Local tooling / misc
+.claude/
+*.zip
