@@ -105,23 +105,29 @@ def resolve_auth(args):
 
 
 # --------------------------------------------------------------------------- #
-def build_body(view):
-    """Documented /risks/pages schema: filters = map, predicates = array."""
-    predicates = []
-    for f in view.get("filters", []):
-        val = f.get("value")
-        # documented predicate value is a single scalar; expand multi-value arrays
-        if isinstance(val, list):
-            for v in val:
-                predicates.append({"field": f["field"],
-                                   "operator": f.get("operator", "EQUAL_TO"),
-                                   "value": v})
-        else:
-            predicates.append({"field": f["field"],
-                               "operator": f.get("operator", "EQUAL_TO"),
-                               "value": val})
-    cols = [c for c in view.get("visibleColumns", []) if c]
-    return {"filters": {}, "predicates": predicates, "visibleColumns": cols}
+# Server-side filtering on this endpoint is unreliable (predicate field names
+# differ from the UI), so we fetch all risks and filter client-side against the
+# response fields. Each view filter field maps to a way of pulling the matching
+# id(s) out of a risk row. Returns None if the row has no usable value for that
+# field (then the filter is skipped for that row, with a warning printed once).
+def extract_ids(row, field):
+    f = field.lower()
+    if f in ("organization", "orggroup", "organizationid", "orggroupid"):
+        og = row.get("orgGroup") or {}
+        return [og.get("id")] if og.get("id") else None
+    if f in ("approvers", "approver", "riskapprover", "riskapprovers", "approverid"):
+        ids = row.get("riskApproversId")
+        return ids if isinstance(ids, list) and ids else None
+    if f in ("owners", "owner", "riskowner", "riskowners"):
+        ids = row.get("riskOwnersId")
+        return ids if isinstance(ids, list) and ids else None
+    if f in ("inherentlevel", "inherentriskscore", "inherentrisklevel"):
+        il = row.get("inherentRiskLevel") or {}
+        guid = il.get("levelGuid")
+        return [guid] if guid else None      # often null -> unmatchable
+    if f in ("stage", "state"):
+        return [row.get("state")] if row.get("state") else None
+    return None  # unmapped field
 
 
 def sort_param(view):
@@ -131,9 +137,23 @@ def sort_param(view):
     return f"{col},{'asc' if asc else 'desc'}"
 
 
+def row_matches(row, view_filters, skipped):
+    """AND across filters; within a filter, row's id(s) must intersect allowed."""
+    for f in view_filters:
+        allowed = f.get("value")
+        allowed = set(allowed) if isinstance(allowed, list) else {allowed}
+        ids = extract_ids(row, f.get("field", ""))
+        if ids is None:
+            skipped.add(f.get("field"))   # can't evaluate -> don't exclude
+            continue
+        if not (set(ids) & allowed):
+            return False
+    return True
+
+
 def fetch_page(hostname, endpoint, headers, view, page, size):
     url = f"https://{hostname}{endpoint}"
-    body = build_body(view)
+    body = {}  # fetch all; filtering happens client-side
     params = {"page": page, "size": size, "sort": sort_param(view)}
     r = requests.post(url, headers=headers, params=params, json=body, timeout=60)
     if r.status_code == 403:
@@ -234,17 +254,26 @@ def main():
     print(f"\nSelected view: {view['name']}")
 
     if args.dump:
-        print("\n--- request body ---")
-        print(json.dumps(build_body(view), ensure_ascii=False, indent=2))
         print(f"--- sort param: {sort_param(view)} ---\n")
         data = fetch_page(hostname, args.endpoint, headers, view, 0, 2)
         print("--- response ---")
         print(json.dumps(data, ensure_ascii=False, indent=2)[:4000])
         return
 
-    rows = fetch_all(hostname, args.endpoint, headers, view)
+    print("Fetching all risks (filtering happens locally)...")
+    all_rows = fetch_all(hostname, args.endpoint, headers, view)
+
+    view_filters = view.get("filters", [])
+    skipped = set()
+    matched = [r for r in all_rows if row_matches(r, view_filters, skipped)]
+    print(f"\nFetched {len(all_rows)} risks; {len(matched)} match the view filters.")
+    if skipped:
+        print("*** WARNING: could not evaluate filter field(s) client-side: "
+              + ", ".join(sorted(skipped)))
+        print("    Those filters were NOT applied (results may be a superset).")
+
     out = args.out or f"risk_{view['name'].replace(' ', '_').lower()}.csv"
-    write_csv(rows, out)
+    write_csv(matched, out)
 
 
 if __name__ == "__main__":
