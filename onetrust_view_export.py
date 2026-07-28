@@ -115,22 +115,24 @@ def resolve_auth(args):
 # whether we compare against the filter values' UUIDs ("value") or labels
 # ("label"). Level fields have a null levelGuid in the grid response, so they
 # must be matched by label against the level string ("HIGH", etc).
-def _level(row, key):
-    lvl = (row.get(key) or {}).get("level")
-    return [lvl.upper()] if lvl else []
+def _attr_ids(row, key):
+    lst = (row.get("attributeValues") or {}).get(key) or []
+    return [x.get("id") for x in lst if isinstance(x, dict) and x.get("id")]
 
 
+# Level filters carry a GUID that lives in attributeValues[key][].id (the
+# top-level inherentRiskLevel.levelGuid is null). Org/approver match by id too.
 FIELD_RULES = {
     "organization":      (lambda r: [(r.get("orgGroup") or {}).get("id")], "value"),
     "riskapprover":      (lambda r: r.get("riskApproversId") or [], "value"),
     "approvers":         (lambda r: r.get("riskApproversId") or [], "value"),
     "riskowner":         (lambda r: r.get("riskOwnersId") or [], "value"),
     "owners":            (lambda r: r.get("riskOwnersId") or [], "value"),
-    "inherentriskscore": (lambda r: _level(r, "inherentRiskLevel"), "label"),
-    "inherentlevel":     (lambda r: _level(r, "inherentRiskLevel"), "label"),
-    "residualriskscore": (lambda r: _level(r, "residualRiskLevel"), "label"),
-    "residuallevel":     (lambda r: _level(r, "residualRiskLevel"), "label"),
-    "stage":             (lambda r: [r.get("state")] if r.get("state") else [], "value"),
+    "inherentriskscore": (lambda r: _attr_ids(r, "inherentRiskLevel"), "value"),
+    "inherentlevel":     (lambda r: _attr_ids(r, "inherentRiskLevel"), "value"),
+    "residualriskscore": (lambda r: _attr_ids(r, "residualRiskLevel"), "value"),
+    "residuallevel":     (lambda r: _attr_ids(r, "residualRiskLevel"), "value"),
+    "stage":             (lambda r: [(r.get("stage") or {}).get("id")], "value"),
 }
 
 
@@ -189,31 +191,32 @@ def _names(lst):
     return "; ".join(o for o in out if o)
 
 
+def _attr_value(row, key):
+    lst = (row.get("attributeValues") or {}).get(key) or []
+    return "; ".join(x.get("value", "") for x in lst
+                     if isinstance(x, dict) and x.get("value"))
+
+
 COLUMN_MAP = {
     "id":                ("ID", lambda r: r.get("id")),
-    "riskname":          ("Risk name", lambda r: r.get("name") or r.get("riskName")
-                          or r.get("title")),
+    "riskname":          ("Risk name", lambda r: r.get("name")),
     "source":            ("Source", lambda r: (r.get("source") or {}).get("name")),
-    "riskowner":         ("Risk owners", lambda r: r.get("riskOwnersName")
-                          or _names(r.get("riskOwners"))),
-    "riskowners":        ("Risk owners", lambda r: r.get("riskOwnersName")
-                          or _names(r.get("riskOwners"))),
+    "riskowner":         ("Risk owners", lambda r: r.get("riskOwnersName")),
+    "riskowners":        ("Risk owners", lambda r: r.get("riskOwnersName")),
     "description":       ("Description", lambda r: r.get("description")),
-    "treatmentplan":     ("Treatment plan", lambda r: r.get("treatment")
-                          or r.get("treatmentPlan")),
+    "treatmentplan":     ("Treatment plan", lambda r: r.get("treatment")),
     "organization":      ("Organization", lambda r: (r.get("orgGroup") or {}).get("name")),
-    "stage":             ("Stage", lambda r: r.get("stage") or r.get("state")),
+    "stage":             ("Stage", lambda r: (r.get("stage") or {}).get("name")),
     "inherentriskscore": ("Inherent risk score",
-                          lambda r: (r.get("inherentRiskLevel") or {}).get("level")),
+                          lambda r: _attr_value(r, "inherentRiskLevel")
+                          or (r.get("inherentRiskLevel") or {}).get("level")),
     "residualriskscore": ("Residual risk score",
-                          lambda r: (r.get("residualRiskLevel")
-                                     or r.get("targetRiskLevel") or {}).get("level")),
-    "createddate":       ("Date created", lambda r: r.get("createdUTCDateTime")
-                          or r.get("createdDate")),
-    "category":          ("Category", lambda r: _names(r.get("categories"))),
+                          lambda r: _attr_value(r, "residualRiskLevel")),
+    "createddate":       ("Date created", lambda r: r.get("createdUTCDateTime")),
+    "category":          ("Category", lambda r: r.get("riskCategoryNames")
+                          or _names(r.get("categories"))),
     "result":            ("Result", lambda r: r.get("result")),
-    "dateclosed":        ("Date closed", lambda r: r.get("dateClosed")
-                          or r.get("closedDate")),
+    "dateclosed":        ("Date closed", lambda r: r.get("dateClosed")),
     "riskapprover":      ("Risk approver", lambda r: r.get("riskApprovers")),
     "number":            ("Number", lambda r: r.get("number")),
 }
