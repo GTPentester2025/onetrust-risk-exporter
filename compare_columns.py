@@ -83,15 +83,84 @@ def norm(v):
     return s.lower()
 
 
+_DATE_FMTS = ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d",
+              "%m/%d/%Y", "%d/%m/%Y", "%m/%d/%y", "%d-%m-%Y",
+              "%b %d, %Y", "%B %d, %Y", "%d %b %Y", "%d %B %Y",
+              "%d-%b-%Y", "%d-%b-%y", "%Y/%m/%d")
+
+
+def to_date(s):
+    """Parse many date/datetime formats to a canonical YYYY-MM-DD, or None."""
+    from datetime import datetime
+    s = s.strip()
+    if not s:
+        return None
+    # fast path: ISO datetime prefix
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})[t ]", s)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    core = s.rstrip("zZ").strip()
+    core = re.sub(r"[.+]\d+(:\d+)?$", "", core)     # drop ms / tz offset tail
+    for fmt in _DATE_FMTS:
+        try:
+            return datetime.strptime(core, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None
+
+
+def to_float(s):
+    """Return float if s is a plain number (allows commas/%), else None."""
+    t = s.strip().rstrip("%").replace(",", "")
+    if not re.match(r"^[+-]?\d+(\.\d+)?$", t):
+        return None
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+_split = re.compile(r"\s*[;,/|]\s*")
+
+
+def split_multi(s):
+    """Split a multi-value cell into a normalized set (owners, categories)."""
+    return {p for p in (x.strip() for x in _split.split(s)) if p}
+
+
 def norm_date(s):
-    """If value looks like an ISO datetime, keep just the YYYY-MM-DD date part
-    so '...T00:00:00Z' matches '...'. Otherwise return s unchanged."""
-    m = re.match(r"^(\d{4}-\d{2}-\d{2})[t ]", s)
-    return m.group(1) if m else s
+    d = to_date(s)
+    return d if d else s
 
 
 def cmp_key(v):
+    """Canonical string used for GUID/key joins (dates collapsed to date part)."""
     return norm_date(norm(v))
+
+
+def values_match(gv, cv):
+    """Equivalence score in [0,1] between a GUI cell and a CLI cell, tolerant
+    of number/date formatting and multi-value delimiter differences."""
+    gk, ck = norm(gv), norm(cv)
+    if gk == ck:
+        return 1.0
+    if ck == "":
+        return 0.0
+    fg, fc = to_float(gk), to_float(ck)
+    if fg is not None and fc is not None:
+        return 1.0 if fg == fc else 0.0
+    dg, dc = to_date(gk), to_date(ck)
+    if dg and dc:
+        return 1.0 if dg == dc else 0.0
+    gs, cs = split_multi(gk), split_multi(ck)
+    if len(gs) > 1 or len(cs) > 1:
+        inter = gs & cs
+        return len(inter) / max(len(gs), len(cs)) if inter else 0.0
+    # last resort: substring, but only for reasonably long strings so a stray
+    # "0" doesn't "match" a date or count column
+    if len(gk) >= 4 and len(ck) >= 4 and (gk in ck or ck in gk):
+        return 0.5
+    return 0.0
 
 
 def looks_guid_col(values):
@@ -153,18 +222,12 @@ def score_column(pairs):
     """pairs: list of (gui_val, cli_val) over the joined rows where the GUI
     cell is non-empty. Return (match_ratio, n_compared)."""
     n = 0
-    hit = 0
+    hit = 0.0
     for gv, cv in pairs:
-        gk = cmp_key(gv)
-        if gk == "":
+        if norm(gv) == "":
             continue
         n += 1
-        ck = cmp_key(cv)
-        if gk == ck:
-            hit += 1
-        elif ck and (gk in ck or ck in gk):
-            # partial: GUI value contained in CLI (e.g. "High" in "High; ...")
-            hit += 0.5
+        hit += values_match(gv, cv)
     return (hit / n if n else 0.0), n
 
 
@@ -203,7 +266,7 @@ def compare(gui_hdr, gui_rows, cli_hdr, cli_rows, key_gui, key_cli, threshold):
         if best_col is not None and best_score < 1.0:
             for gr, cr in joined:
                 gv, cv = gr.get(gcol, ""), cr.get(best_col, "")
-                if cmp_key(gv) != "" and cmp_key(gv) != cmp_key(cv):
+                if norm(gv) != "" and values_match(gv, cv) < 1.0:
                     samples.append((str(gv), str(cv)))
                 if len(samples) >= 3:
                     break
