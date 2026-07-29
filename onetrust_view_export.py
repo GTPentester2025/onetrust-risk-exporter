@@ -241,6 +241,15 @@ COLUMN_MAP = {
     "number":            ("Number", lambda r: r.get("number")),
 }
 
+# The GUI export's 18 columns, in order. Used when a view has no activeColumns
+# of its own, so every export is trimmed to these unless --all-columns is set.
+DEFAULT_COLUMNS = [
+    "riskGuid", "id", "riskName", "source", "riskOwner", "description",
+    "treatmentPlan", "organization", "stage", "inherentRiskScore",
+    "inherentRiskLevel", "residualRiskScore", "residualRiskLevel",
+    "createdDate", "category", "result", "dateClosed", "riskApprover",
+]
+
 
 def project_rows(rows, active_columns):
     """Return (list-of-ordered-dicts, headers) using only the view's columns."""
@@ -461,7 +470,8 @@ def main():
     ap.add_argument("--sample", action="store_true",
                     help="Write one full risk row to sample_row.json and exit.")
     ap.add_argument("--all-columns", action="store_true",
-                    help="Output every field (flattened) instead of the view's columns.")
+                    help="Dump every flattened field (~200 cols). Default is the "
+                         "18 GUI-parity columns.")
     ap.add_argument("--start-concurrency", type=int, default=4,
                     help="Initial parallel page count (AIMD floor probe).")
     ap.add_argument("--max-concurrency", type=int, default=12,
@@ -513,12 +523,14 @@ def main():
               + ", ".join(sorted(skipped)) + " (not applied).")
 
     out = args.out or f"risk_{view['name'].replace(' ', '_').lower()}.csv"
-    active_columns = view.get("activeColumns")
-    if active_columns and not args.all_columns:
+    # Default to the 18 GUI-parity columns; a view may override via
+    # activeColumns; --all-columns dumps every flattened field.
+    active_columns = view.get("activeColumns") or DEFAULT_COLUMNS
+    if args.all_columns:
+        write_csv([flatten(r) for r in matched], out)
+    else:
         projected, hdrs = project_rows(matched, active_columns)
         write_csv(projected, out, headers=hdrs)
-    else:
-        write_csv([flatten(r) for r in matched], out)
 
 
 if __name__ == "__main__":
