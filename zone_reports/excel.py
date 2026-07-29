@@ -41,7 +41,7 @@ def _write_data_sheet(wb, data_csv):
     # bulk write via a 2D array assignment (fast)
     top_left = ws.Cells(1, 1)
     bottom_right = ws.Cells(nrows, ncols)
-    ws.Range(top_left, bottom_right).Value = rows
+    ws.Range(top_left, bottom_right).Value = tuple(tuple(r) for r in rows)
 
     # define the Table (ListObject) over the used range
     xlSrcRange = 1
@@ -111,7 +111,7 @@ def _configure_pivot(pt, org):
 def _find_title_cell(ws):
     """Find the cell whose text contains 'Risk Analysis' (the MAZ title)."""
     try:
-        found = ws.UsedRange.Find("Risk Analysis")
+        found = ws.UsedRange.Find("Risk Analysis", LookIn=-4163, LookAt=2)
         if found is not None:
             return found.Row, found.Column
     except Exception:
@@ -140,6 +140,7 @@ def render_workbook(workbook_path, out_path, template_sheet, data_csv, reports):
     shutil.copyfile(workbook_path, backup)
     print(f"Backup written: {backup}")
 
+    excel = None
     excel = win32.DispatchEx("Excel.Application")
     excel.Visible = False
     excel.DisplayAlerts = False
@@ -181,4 +182,5 @@ def render_workbook(workbook_path, out_path, template_sheet, data_csv, reports):
         wb.SaveAs(os.path.abspath(out_path))
         print(f"Saved: {out_path}")
     finally:
-        excel.Quit()
+        if excel is not None:
+            excel.Quit()
