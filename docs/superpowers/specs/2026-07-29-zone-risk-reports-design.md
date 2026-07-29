@@ -61,8 +61,10 @@ The map is a module-level dict, easy to edit.
 ## Pivot definition (all sheets identical except the Organization filter)
 
 - **Source:** an Excel Table `RiskData` on a `Data` sheet (auto-expands).
-- **Rows:** `Category` (risk domain: Business Continuity Management, Information
-  Security, Privacy, Security, …).
+- **Rows:** `Category` field (values are risk domains: Business Continuity
+  Management, Information Security, Privacy, Security, …). Note: in MAZ the row
+  header is captioned **"Risk Names"**, but the underlying pivot field is
+  `Category` — clones read the field name from the template pivot, not the caption.
 - **Columns:** `Cat` (supplier category).
 - **Values:** Count of `ID`.
 - **Page filters:** `Organization` (set per zone; blank/all on Overall),
