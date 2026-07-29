@@ -42,9 +42,8 @@ def _print_dry_run(reports):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Build zone risk report sheets.")
     ap.add_argument("--data", default="refined.csv")
-    ap.add_argument("--workbook", help="Workbook holding the MAZ template (required unless --dry-run).")
-    ap.add_argument("--out", help="Output path (default: overwrite --workbook).")
-    ap.add_argument("--template-sheet", default="MAZ")
+    ap.add_argument("--out", default="Risk_Reports.xlsx",
+                    help="Output workbook to CREATE (default: Risk_Reports.xlsx).")
     ap.add_argument("--dry-run", action="store_true",
                     help="Compute + print stats/narrative for every zone; no Excel.")
     args = ap.parse_args(argv)
@@ -57,11 +56,8 @@ def main(argv=None):
         _print_dry_run(reports)
         return 0
 
-    if not args.workbook:
-        sys.exit("--workbook is required for a full run (or use --dry-run).")
-    from zone_reports.excel import render_workbook       # Task 4
-    render_workbook(args.workbook, args.out or args.workbook,
-                    args.template_sheet, args.data, reports)
+    from zone_reports.excel import render_workbook
+    render_workbook(args.out, args.data, reports)       # builds a new workbook
     return 0
 
 
