@@ -192,13 +192,22 @@ def _names(lst):
 
 
 def _attr_value(row, key):
-    lst = (row.get("attributeValues") or {}).get(key) or []
-    return "; ".join(x.get("value", "") for x in lst
-                     if isinstance(x, dict) and x.get("value"))
+    """attributeValues[key] may be a list of {value}, a single {value}, or a
+    scalar. Return a joined string in every case (empty when absent)."""
+    v = (row.get("attributeValues") or {}).get(key)
+    if isinstance(v, list):
+        return "; ".join(
+            str(x.get("value", "")) if isinstance(x, dict) else str(x)
+            for x in v if x not in (None, ""))
+    if isinstance(v, dict):
+        return v.get("value", "")
+    return "" if v is None else str(v)
 
 
 COLUMN_MAP = {
-    "id":                ("ID", lambda r: r.get("id")),
+    # GUI export parity (order set by activeColumns in views.json)
+    "riskguid":          ("Risk GUID", lambda r: r.get("id")),
+    "id":                ("ID", lambda r: r.get("number")),
     "riskname":          ("Risk name", lambda r: r.get("name")),
     "source":            ("Source", lambda r: (r.get("source") or {}).get("name")),
     "riskowner":         ("Risk owners", lambda r: r.get("riskOwnersName")),
@@ -208,9 +217,14 @@ COLUMN_MAP = {
     "organization":      ("Organization", lambda r: (r.get("orgGroup") or {}).get("name")),
     "stage":             ("Stage", lambda r: (r.get("stage") or {}).get("name")),
     "inherentriskscore": ("Inherent risk score",
+                          lambda r: _attr_value(r, "inherentRiskScore")
+                          or (r.get("inherentRiskLevel") or {}).get("riskScore")),
+    "inherentrisklevel": ("Inherent risk level",
                           lambda r: _attr_value(r, "inherentRiskLevel")
                           or (r.get("inherentRiskLevel") or {}).get("level")),
     "residualriskscore": ("Residual risk score",
+                          lambda r: _attr_value(r, "residualRiskScore")),
+    "residualrisklevel": ("Residual risk level",
                           lambda r: _attr_value(r, "residualRiskLevel")),
     "createddate":       ("Date created", lambda r: r.get("createdUTCDateTime")),
     "category":          ("Category", lambda r: r.get("riskCategoryNames")
