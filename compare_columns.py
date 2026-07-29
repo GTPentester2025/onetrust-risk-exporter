@@ -138,29 +138,75 @@ def cmp_key(v):
     return norm_date(norm(v))
 
 
-def values_match(gv, cv):
-    """Equivalence score in [0,1] between a GUI cell and a CLI cell, tolerant
-    of number/date formatting and multi-value delimiter differences."""
-    gk, ck = norm(gv), norm(cv)
-    if gk == ck:
-        return 1.0
-    if ck == "":
+_maybe_date = re.compile(r"\d.*[-/]|\b\w{3,9}\s+\d")   # cheap pre-filter
+_TOKEN_CACHE = {}
+
+
+def typed(v):
+    """Parse a cell ONCE into a comparable token, memoized on the raw string.
+    Token is (kind, payload):
+      ("", )                     -> empty (skip)
+      ("num", float)
+      ("date", "YYYY-MM-DD")
+      ("str", normstr, frozenset(parts))
+    """
+    key = v if isinstance(v, str) else str(v)
+    t = _TOKEN_CACHE.get(key)
+    if t is not None:
+        return t
+    s = norm(v)
+    if s == "":
+        t = ("",)
+    else:
+        f = to_float(s)
+        if f is not None:
+            t = ("num", f)
+        else:
+            d = to_date(s) if _maybe_date.search(s) else None
+            if d:
+                t = ("date", d)
+            else:
+                t = ("str", s, frozenset(split_multi(s)))
+    _TOKEN_CACHE[key] = t
+    return t
+
+
+def match_tok(g, c):
+    """Equivalence score in [0,1] between two pre-parsed tokens. Assumes the
+    GUI token is non-empty (caller skips empties)."""
+    if c[0] == "":
         return 0.0
-    fg, fc = to_float(gk), to_float(ck)
-    if fg is not None and fc is not None:
-        return 1.0 if fg == fc else 0.0
-    dg, dc = to_date(gk), to_date(ck)
-    if dg and dc:
-        return 1.0 if dg == dc else 0.0
-    gs, cs = split_multi(gk), split_multi(ck)
-    if len(gs) > 1 or len(cs) > 1:
-        inter = gs & cs
-        return len(inter) / max(len(gs), len(cs)) if inter else 0.0
-    # last resort: substring, but only for reasonably long strings so a stray
-    # "0" doesn't "match" a date or count column
-    if len(gk) >= 4 and len(ck) >= 4 and (gk in ck or ck in gk):
+    if g[0] == c[0]:
+        k = g[0]
+        if k == "num":
+            return 1.0 if g[1] == c[1] else 0.0
+        if k == "date":
+            return 1.0 if g[1] == c[1] else 0.0
+        # both str
+        gs, cs = g[1], c[1]
+        if gs == cs:
+            return 1.0
+        gp, cp = g[2], c[2]
+        if len(gp) > 1 or len(cp) > 1:
+            inter = gp & cp
+            return len(inter) / max(len(gp), len(cp)) if inter else 0.0
+        if len(gs) >= 4 and len(cs) >= 4 and (gs in cs or cs in gs):
+            return 0.5
+        return 0.0
+    # cross-kind: compare on their string forms as a weak fallback
+    gs = g[1] if g[0] == "str" else str(g[1])
+    cs = c[1] if c[0] == "str" else str(c[1])
+    if gs == cs:
+        return 1.0
+    if len(gs) >= 4 and len(cs) >= 4 and (gs in cs or cs in gs):
         return 0.5
     return 0.0
+
+
+def values_match(gv, cv):
+    """Convenience wrapper used for sample display."""
+    g = typed(gv)
+    return 0.0 if g[0] == "" else match_tok(g, typed(cv))
 
 
 def looks_guid_col(values):
@@ -218,19 +264,6 @@ def index_by_key(rows, key):
 
 
 # --------------------------------------------------------------------------- #
-def score_column(pairs):
-    """pairs: list of (gui_val, cli_val) over the joined rows where the GUI
-    cell is non-empty. Return (match_ratio, n_compared)."""
-    n = 0
-    hit = 0.0
-    for gv, cv in pairs:
-        if norm(gv) == "":
-            continue
-        n += 1
-        hit += values_match(gv, cv)
-    return (hit / n if n else 0.0), n
-
-
 def compare(gui_hdr, gui_rows, cli_hdr, cli_rows, key_gui, key_cli, threshold):
     cli_idx, cli_dupes = index_by_key(cli_rows, key_cli)
     joined = []               # (gui_row, cli_row)
@@ -251,13 +284,28 @@ def compare(gui_hdr, gui_rows, cli_hdr, cli_rows, key_gui, key_cli, threshold):
         sys.exit("No rows joined - key values don't overlap. Check --key-*.")
     print()
 
+    # Parse every cell ONCE into a typed token. CLI column vectors are built a
+    # single time and reused across all GUI columns (the expensive part).
+    gui_j = [gr for gr, _ in joined]
+    cli_j = [cr for _, cr in joined]
+    cli_typed = {c: [typed(cr.get(c, "")) for cr in cli_j] for c in cli_hdr}
+
     results = []              # (gui_col, best_cli_col, score, n, samples)
     for gcol in gui_hdr:
-        best_col, best_score, best_n = None, -1.0, 0
+        gvec = [typed(gr.get(gcol, "")) for gr in gui_j]
+        idxs = [i for i, g in enumerate(gvec) if g[0] != ""]   # non-empty GUI
+        n = len(idxs)
+        best_col, best_score, best_n = None, -1.0, n
         ranked = []
         for ccol in cli_hdr:
-            pairs = [(gr.get(gcol, ""), cr.get(ccol, "")) for gr, cr in joined]
-            sc, n = score_column(pairs)
+            cvec = cli_typed[ccol]
+            if n == 0:
+                sc = 0.0
+            else:
+                hit = 0.0
+                for i in idxs:
+                    hit += match_tok(gvec[i], cvec[i])
+                sc = hit / n
             ranked.append((sc, n, ccol))
             if sc > best_score:
                 best_col, best_score, best_n = ccol, sc, n
