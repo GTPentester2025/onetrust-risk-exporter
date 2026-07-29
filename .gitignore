@@ -19,3 +19,5 @@ v*_results.txt
 .claude/
 *.zip
 sample_row.json
+
+.superpowers/
