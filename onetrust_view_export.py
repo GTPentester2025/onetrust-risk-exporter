@@ -213,7 +213,8 @@ COLUMN_MAP = {
     "riskowner":         ("Risk owners", lambda r: r.get("riskOwnersName")),
     "riskowners":        ("Risk owners", lambda r: r.get("riskOwnersName")),
     "description":       ("Description", lambda r: r.get("description")),
-    "treatmentplan":     ("Treatment plan", lambda r: r.get("treatment")),
+    "treatmentplan":     ("Treatment plan",
+                          lambda r: r.get("recommendation") or r.get("treatment")),
     "organization":      ("Organization", lambda r: (r.get("orgGroup") or {}).get("name")),
     "stage":             ("Stage", lambda r: (r.get("stage") or {}).get("name")),
     "inherentriskscore": ("Inherent risk score",
@@ -222,10 +223,15 @@ COLUMN_MAP = {
     "inherentrisklevel": ("Inherent risk level",
                           lambda r: _attr_value(r, "inherentRiskLevel")
                           or (r.get("inherentRiskLevel") or {}).get("level")),
+    # Residual == current risk in the grid; it lives in the top-level
+    # riskScore/level (attributeValues.* is empty in the API response).
     "residualriskscore": ("Residual risk score",
-                          lambda r: _attr_value(r, "residualRiskScore")),
+                          lambda r: r.get("riskScore")
+                          if r.get("riskScore") not in (None, "")
+                          else _attr_value(r, "residualRiskScore")),
     "residualrisklevel": ("Residual risk level",
-                          lambda r: _attr_value(r, "residualRiskLevel")),
+                          lambda r: r.get("level")
+                          or _attr_value(r, "residualRiskLevel")),
     "createddate":       ("Date created", lambda r: r.get("createdUTCDateTime")),
     "category":          ("Category", lambda r: r.get("riskCategoryNames")
                           or _names(r.get("categories"))),

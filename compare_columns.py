@@ -89,24 +89,33 @@ _DATE_FMTS = ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d",
               "%d-%b-%Y", "%d-%b-%y", "%Y/%m/%d")
 
 
-def to_date(s):
-    """Parse many date/datetime formats to a canonical YYYY-MM-DD, or None."""
+def date_candidates(s):
+    """Parse a date/datetime string into the SET of ISO dates it could mean.
+    Ambiguous slash dates (03/06/2026) yield both {2026-03-06, 2026-06-03} so a
+    DD/MM export still matches an MM/DD or ISO counterpart. Empty set if not a
+    date."""
     from datetime import datetime
     s = s.strip()
     if not s:
-        return None
-    # fast path: ISO datetime prefix
-    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})[t ]", s)
+        return frozenset()
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})[t ]", s)      # ISO datetime prefix
     if m:
-        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+        return frozenset({f"{m.group(1)}-{m.group(2)}-{m.group(3)}"})
     core = s.rstrip("zZ").strip()
-    core = re.sub(r"[.+]\d+(:\d+)?$", "", core)     # drop ms / tz offset tail
+    core = re.sub(r"[.+]\d+(:\d+)?$", "", core)           # drop ms / tz tail
+    out = set()
     for fmt in _DATE_FMTS:
         try:
-            return datetime.strptime(core, fmt).strftime("%Y-%m-%d")
+            out.add(datetime.strptime(core, fmt).strftime("%Y-%m-%d"))
         except ValueError:
             continue
-    return None
+    return frozenset(out)
+
+
+def to_date(s):
+    """Single canonical YYYY-MM-DD (first candidate) -- used for join keys."""
+    c = date_candidates(s)
+    return min(c) if c else None
 
 
 def to_float(s):
@@ -162,9 +171,9 @@ def typed(v):
         if f is not None:
             t = ("num", f)
         else:
-            d = to_date(s) if _maybe_date.search(s) else None
-            if d:
-                t = ("date", d)
+            ds = date_candidates(s) if _maybe_date.search(s) else frozenset()
+            if ds:
+                t = ("date", ds)
             else:
                 t = ("str", s, frozenset(split_multi(s)))
     _TOKEN_CACHE[key] = t
@@ -181,7 +190,7 @@ def match_tok(g, c):
         if k == "num":
             return 1.0 if g[1] == c[1] else 0.0
         if k == "date":
-            return 1.0 if g[1] == c[1] else 0.0
+            return 1.0 if (g[1] & c[1]) else 0.0
         # both str
         gs, cs = g[1], c[1]
         if gs == cs:
