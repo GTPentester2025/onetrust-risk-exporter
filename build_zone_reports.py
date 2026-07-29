@@ -2,11 +2,10 @@
 """Build per-zone + Overall Excel risk reports from refined.csv.
 
 Pure computation and --dry-run need no Excel. A full run drives Excel via COM
-(pywin32, auto-installed) to clone the MAZ template per zone. See
-docs/superpowers/specs/2026-07-29-zone-risk-reports-design.md.
+(pywin32, auto-installed) to build a new workbook with each zone sheet
+constructed from scratch (live pivot, charts, narrative).
 """
 import argparse
-import sys
 from datetime import date
 
 from zone_reports.stats import load_rows, compute_zone_stats, ZONES

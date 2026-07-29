@@ -21,12 +21,11 @@ TABLE_NAME = "RiskData"
 # --- Excel enum constants (COM) ------------------------------------------- #
 xlDatabase = 1
 xlSrcRange = 1
-xlRowField, xlColumnField, xlPageField, xlDataField = 1, 2, 3, 4
+xlRowField, xlColumnField, xlPageField = 1, 2, 3
 xlCount = -4112
 xlPie = 5
 xlColumnStacked = 52
 xlRows = 1
-xlValues = -4163
 xlOpenXMLWorkbook = 51
 xlHAlignCenter = -4108
 
@@ -46,8 +45,7 @@ PIE_TOP, PIE_H = 10, 250
 BAR_TOP, BAR_H = 270, 250
 CHART_W = 430
 
-BANNER_ROW = 13      # gold banner title row (below the pivot)
-NARRATIVE_ROW = 15   # narrative text starts here, column A
+BANNER_ROW = 13      # fallback banner row (zero-row zones / pivot build failure)
 HELPER_COL = 27      # hidden helper block for chart data (column AA)
 
 
@@ -147,22 +145,21 @@ def _style_pivot(pt, ws):
 
 
 # --------------------------------------------------------------------------- #
-def _write_banner_title(ws, title):
-    """Big gold banner merged across the pivot width."""
-    rng = ws.Range(ws.Cells(BANNER_ROW, 1), ws.Cells(BANNER_ROW, 9))
+def _write_banner_title(ws, title, row):
+    """Big gold banner merged across the pivot width at the given row."""
+    rng = ws.Range(ws.Cells(row, 1), ws.Cells(row, 9))
     rng.Merge()
     rng.Value = title
     rng.Interior.Color = GOLD_BANNER
     rng.Font.Bold = True
     rng.Font.Size = 20
     rng.HorizontalAlignment = xlHAlignCenter
-    ws.Rows(BANNER_ROW).RowHeight = 42
+    ws.Rows(row).RowHeight = 42
 
 
-def _write_narrative(ws, lines):
+def _write_narrative(ws, lines, start):
     """Narrative text down column A on a pale-gold background; domain headers
-    (lines containing '%') bold."""
-    start = NARRATIVE_ROW
+    (lines containing '%') bold. Starts at row `start`."""
     for i, line in enumerate(lines):
         cell = ws.Cells(start + i, 1)
         cell.Value = line
@@ -246,19 +243,35 @@ def render_workbook(out_path, data_csv, reports):
             ws = wb.Worksheets.Add(After=wb.Worksheets(wb.Worksheets.Count))
             ws.Name = rep["sheet"]
             pt_name = "pt_" + rep["sheet"].replace("-", "_")
+            total = rep["stats"].total
+
+            # Banner sits below the pivot body; default row when there's no
+            # pivot (zero-row zone) or if the pivot build fails.
+            banner_row = BANNER_ROW
+            if total > 0:
+                try:
+                    pt = _build_pivot(cache, ws, rep["org"], pt_name)
+                    _style_pivot(pt, ws)
+                    tr = pt.TableRange1
+                    banner_row = tr.Row + tr.Rows.Count + 1   # clear of the pivot
+                except Exception as e:
+                    print(f"  WARN: pivot build failed on {rep['sheet']}: {e}")
+
+            # Title + narrative never write into the pivot body now; still guard
+            # so one sheet's failure can't abort the whole SaveAs.
             try:
-                pt = _build_pivot(cache, ws, rep["org"], pt_name)
-                _style_pivot(pt, ws)
+                _write_banner_title(ws, rep["title"], banner_row)
+                _write_narrative(ws, rep["narrative"], banner_row + 2)
             except Exception as e:
-                print(f"  WARN: pivot build failed on {rep['sheet']}: {e}")
-            _write_banner_title(ws, rep["title"])
-            _write_narrative(ws, rep["narrative"])
-            try:
-                pie_rng, bar_rng = _write_helper(ws, rep["stats"])
-                _add_charts(ws, pie_rng, bar_rng)
-            except Exception as e:
-                print(f"  WARN: charts failed on {rep['sheet']}: {e}")
-            print(f"  built {rep['sheet']}: total={rep['stats'].total}")
+                print(f"  WARN: title/narrative failed on {rep['sheet']}: {e}")
+
+            if total > 0:
+                try:
+                    pie_rng, bar_rng = _write_helper(ws, rep["stats"])
+                    _add_charts(ws, pie_rng, bar_rng)
+                except Exception as e:
+                    print(f"  WARN: charts failed on {rep['sheet']}: {e}")
+            print(f"  built {rep['sheet']}: total={total}")
 
         wb.Worksheets(DATA_SHEET).Move(After=wb.Worksheets(wb.Worksheets.Count))
         wb.SaveAs(os.path.abspath(out_path), FileFormat=xlOpenXMLWorkbook)
