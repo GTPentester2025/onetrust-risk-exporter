@@ -49,14 +49,78 @@ BANNER_ROW = 13      # fallback banner row (zero-row zones / pivot build failure
 HELPER_COL = 27      # hidden helper block for chart data (column AA)
 
 
+def _register_pywin32_dlls():
+    """pywin32 ships pythoncomXX.dll / pywintypesXX.dll in a `pywin32_system32`
+    folder that isn't on the DLL search path after a plain `pip install`
+    (esp. Python 3.12+). Put it on the path so win32com can import."""
+    import glob
+    import site
+
+    dirs = []
+    try:
+        dirs += list(site.getsitepackages())
+    except Exception:
+        pass
+    try:
+        dirs.append(site.getusersitepackages())
+    except Exception:
+        pass
+    dirs.append(os.path.join(os.path.dirname(sys.executable), "Lib", "site-packages"))
+
+    for sp in dirs:
+        d = os.path.join(sp, "pywin32_system32")
+        if os.path.isdir(d):
+            try:
+                os.add_dll_directory(d)
+            except Exception:
+                pass
+            os.environ["PATH"] = d + os.pathsep + os.environ.get("PATH", "")
+            # some setups also keep the DLLs under win32/ and win32/lib
+            for extra in glob.glob(os.path.join(sp, "win32")):
+                try:
+                    os.add_dll_directory(extra)
+                except Exception:
+                    pass
+
+
+def _run_pywin32_postinstall():
+    """Official pywin32 post-install: copies the DLLs into place. No-op if the
+    script is missing; ignores failure (may need admin)."""
+    script = os.path.join(os.path.dirname(sys.executable), "Scripts",
+                          "pywin32_postinstall.py")
+    if os.path.isfile(script):
+        try:
+            subprocess.check_call([sys.executable, script, "-install"])
+        except Exception as e:
+            print(f"  pywin32 post-install step skipped: {e}")
+
+
 def _ensure_pywin32():
     try:
         import win32com.client  # noqa: F401
         return
     except ImportError:
+        pass
+
+    # Install the package only if it's genuinely absent (import may have failed
+    # purely because the DLLs weren't on the path).
+    try:
+        import win32com  # noqa: F401
+    except ImportError:
         print("pywin32 not found -> installing...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywin32"])
+
+    _register_pywin32_dlls()
+    try:
         import win32com.client  # noqa: F401
+        return
+    except ImportError:
+        pass
+
+    # Last resort: run the official post-install, then register + import again.
+    _run_pywin32_postinstall()
+    _register_pywin32_dlls()
+    import win32com.client  # noqa: F401  (raise if still broken)
 
 
 # --------------------------------------------------------------------------- #
