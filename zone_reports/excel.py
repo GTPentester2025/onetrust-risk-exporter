@@ -3,8 +3,11 @@ SCRATCH into a brand-new workbook. Windows + Excel required.
 
 Each zone sheet gets: a live PivotTable (Category rows x Cat columns, Count of
 ID, filtered by Organization + Stage), a pie chart (risks by domain), a stacked
-bar chart (Cat-wise risks by domain), a gold banner title, and the narrative.
-Styling mimics the hand-built MAZ reference (gold/amber theme).
+column chart (Cat-wise risks by domain), a gold banner title, and the
+narrative. Chart source data lives on a hidden ChartData sheet (hidden CELLS
+don't plot; a hidden SHEET's ranges do), and series are built manually via
+NewSeries — the most reliable COM path. Styling mimics the hand-built MAZ
+reference (gold theme, domain colours, % labels on the pie).
 
 Cannot be exercised headlessly; validate on a Windows+Excel machine.
 """
@@ -12,10 +15,12 @@ import csv
 import os
 import subprocess
 import sys
+import traceback
 
 from zone_reports.stats import CAT_ORDER
 
 DATA_SHEET = "Data"
+CHART_SHEET = "ChartData"
 TABLE_NAME = "RiskData"
 
 # --- Excel enum constants (COM) ------------------------------------------- #
@@ -25,9 +30,10 @@ xlRowField, xlColumnField, xlPageField = 1, 2, 3
 xlCount = -4112
 xlPie = 5
 xlColumnStacked = 52
-xlRows = 1
 xlOpenXMLWorkbook = 51
 xlHAlignCenter = -4108
+xlLegendPositionBottom = -4107
+xlSheetHidden = 0
 
 
 # --- theme colours (Excel Interior.Color wants R + G*256 + B*65536) ------- #
@@ -39,16 +45,20 @@ GOLD_BANNER = _rgb(255, 192, 0)     # strong amber for the title banner
 GOLD_LIGHT = _rgb(255, 217, 102)    # lighter gold for pivot header
 GOLD_PALE = _rgb(255, 242, 204)     # pale gold fill for narrative
 
-# Chart anchors (points): to the right of the pivot/narrative column.
-CHART_LEFT = 470
-PIE_TOP, PIE_H = 10, 250
-BAR_TOP, BAR_H = 270, 250
-CHART_W = 430
+# Domain colours matched to the reference charts.
+DOMAIN_COLORS = {
+    "Business Continuity Management": _rgb(31, 86, 103),    # dark teal
+    "Information Security":           _rgb(237, 125, 49),   # orange
+    "Privacy":                        _rgb(46, 125, 50),    # dark green
+    "Security":                       _rgb(68, 184, 213),   # light blue
+}
 
-BANNER_ROW = 13      # fallback banner row (zero-row zones / pivot build failure)
-HELPER_COL = 27      # hidden helper block for chart data (column AA)
+CHART_W, CHART_H = 360, 230         # points
+CHART_COL = 8                       # charts anchored at column H
+BANNER_ROW = 13                     # fallback banner row (zero-row zones)
 
 
+# --------------------------------------------------------------------------- #
 def _register_pywin32_dlls():
     """pywin32 ships pythoncomXX.dll / pywintypesXX.dll in a `pywin32_system32`
     folder that isn't on the DLL search path after a plain `pip install`
@@ -193,9 +203,14 @@ def _build_pivot(cache, ws, org, name):
 
 
 def _style_pivot(pt, ws):
-    """Gold pivot style + bold gold header rows."""
+    """Gold pivot style, bold gold header rows, reference caption, autofit."""
     try:
         pt.TableStyle2 = "PivotStyleMedium3"
+    except Exception:
+        pass
+    try:
+        # the reference workbook captions the row header "Risk Names"
+        pt.PivotFields("Category").Caption = "Risk Names"
     except Exception:
         pass
     try:
@@ -204,14 +219,15 @@ def _style_pivot(pt, ws):
         hdr = ws.Range(ws.Cells(4, 1), ws.Cells(5, rng.Columns.Count))
         hdr.Interior.Color = GOLD_LIGHT
         hdr.Font.Bold = True
+        pt.TableRange2.EntireColumn.AutoFit()
     except Exception:
         pass
 
 
 # --------------------------------------------------------------------------- #
 def _write_banner_title(ws, title, row):
-    """Big gold banner merged across the pivot width at the given row."""
-    rng = ws.Range(ws.Cells(row, 1), ws.Cells(row, 9))
+    """Big gold banner merged across the report width at the given row."""
+    rng = ws.Range(ws.Cells(row, 1), ws.Cells(row, 14))
     rng.Merge()
     rng.Value = title
     rng.Interior.Color = GOLD_BANNER
@@ -222,11 +238,12 @@ def _write_banner_title(ws, title, row):
 
 
 def _write_narrative(ws, lines, start):
-    """Narrative text down column A on a pale-gold background; domain headers
-    (lines containing '%') bold. Starts at row `start`."""
+    """Narrative text down column A on a pale-gold background; headline lines
+    (containing '%' or the Key Insights header) bold. Starts at row `start`."""
     for i, line in enumerate(lines):
         cell = ws.Cells(start + i, 1)
         cell.Value = line
+        cell.Font.Size = 11
         if line and not line.startswith("    ") and ("%" in line or line.startswith("Key Insights")):
             cell.Font.Bold = True
     block = ws.Range(ws.Cells(start, 1), ws.Cells(start + max(len(lines), 1), 6))
@@ -234,53 +251,107 @@ def _write_narrative(ws, lines, start):
 
 
 # --------------------------------------------------------------------------- #
-def _write_helper(ws, stats):
-    """Write chart source into hidden helper columns. Returns (pie_range,
-    bar_matrix_range) as COM Range objects."""
-    c0 = HELPER_COL
-    ws.Cells(1, c0).Value = "Domain"
-    ws.Cells(1, c0 + 1).Value = "Count"
-    for i, (dom, n) in enumerate(stats.by_domain, start=2):
-        ws.Cells(i, c0).Value = dom
-        ws.Cells(i, c0 + 1).Value = n
-    pie_rng = ws.Range(ws.Cells(1, c0), ws.Cells(1 + len(stats.by_domain), c0 + 1))
-
+def _write_chart_block(cws, r0, stats):
+    """Write one zone's chart source data on the ChartData sheet starting at
+    row r0. Returns (pie_x, pie_v, cats_rng, dom_rows) as COM Ranges, where
+    dom_rows is [(domain, values_range), ...] in by_domain order."""
+    doms = stats.by_domain
     cats = [c for c, _ in stats.grand_by_cat]
-    m0 = c0 + 3
-    ws.Cells(1, m0).Value = ""                       # corner
-    for j, cat in enumerate(cats, start=1):
-        ws.Cells(1, m0 + j).Value = cat
-    for i, (dom, _) in enumerate(stats.by_domain, start=2):
-        ws.Cells(i, m0).Value = dom
+
+    for i, (dom, n) in enumerate(doms, start=1):
+        cws.Cells(r0 + i, 1).Value = dom
+        cws.Cells(r0 + i, 2).Value = n
+    pie_x = cws.Range(cws.Cells(r0 + 1, 1), cws.Cells(r0 + len(doms), 1))
+    pie_v = cws.Range(cws.Cells(r0 + 1, 2), cws.Cells(r0 + len(doms), 2))
+
+    c0 = 4
+    for j, cat in enumerate(cats):
+        cws.Cells(r0, c0 + 1 + j).Value = cat
+    cats_rng = cws.Range(cws.Cells(r0, c0 + 1), cws.Cells(r0, c0 + len(cats)))
+
+    dom_rows = []
+    for i, (dom, _n) in enumerate(doms, start=1):
+        cws.Cells(r0 + i, c0).Value = dom
         row = stats.crosstab.get(dom, {})
-        for j, cat in enumerate(cats, start=1):
-            ws.Cells(i, m0 + j).Value = row.get(cat, 0)
-    bar_rng = ws.Range(ws.Cells(1, m0),
-                       ws.Cells(1 + len(stats.by_domain), m0 + len(cats)))
+        for j, cat in enumerate(cats):
+            cws.Cells(r0 + i, c0 + 1 + j).Value = row.get(cat, 0)
+        vals = cws.Range(cws.Cells(r0 + i, c0 + 1), cws.Cells(r0 + i, c0 + len(cats)))
+        dom_rows.append((dom, vals))
+    return pie_x, pie_v, cats_rng, dom_rows
 
+
+def _new_chart(ws, ctype, left, top, w, h):
+    """Create an embedded chart; AddChart2 first, ChartObjects fallback."""
     try:
-        ws.Range(ws.Columns(c0), ws.Columns(m0 + len(cats))).EntireColumn.Hidden = True
+        return ws.Shapes.AddChart2(-1, ctype, left, top, w, h).Chart
     except Exception:
-        pass
-    return pie_rng, bar_rng
+        ch = ws.ChartObjects().Add(left, top, w, h).Chart
+        ch.ChartType = ctype
+        return ch
 
 
-def _add_charts(ws, pie_rng, bar_rng):
-    pie = ws.ChartObjects().Add(CHART_LEFT, PIE_TOP, CHART_W, PIE_H).Chart
-    pie.ChartType = xlPie
-    pie.SetSourceData(Source=pie_rng)
+def _add_charts(ws, anchor_row, pie_x, pie_v, cats_rng, dom_rows):
+    """Pie (domain share) + stacked column (Cat-wise by domain), anchored at
+    column H below the banner, series built manually."""
+    left = ws.Cells(anchor_row, CHART_COL).Left
+    top = ws.Cells(anchor_row, CHART_COL).Top
+
+    pie = _new_chart(ws, xlPie, left, top, CHART_W, CHART_H)
+    s = pie.SeriesCollection().NewSeries()
+    s.XValues = pie_x
+    s.Values = pie_v
     pie.HasTitle = True
-    pie.ChartTitle.Text = "RISKS IDENTIFIED"
     try:
-        pie.ApplyDataLabels()
+        pie.ChartTitle.Text = "RISKS IDENTIFIED"
+    except Exception:
+        pass
+    try:
+        for i, (dom, _r) in enumerate(dom_rows, start=1):
+            col = DOMAIN_COLORS.get(dom)
+            if col is not None:
+                s.Points(i).Format.Fill.ForeColor.RGB = col
+    except Exception:
+        pass
+    try:
+        s.ApplyDataLabels()
+        dls = s.DataLabels()
+        dls.ShowPercentage = True
+        dls.ShowValue = False
+        dls.Font.Bold = True
+    except Exception:
+        pass
+    try:
+        pie.HasLegend = True
+        pie.Legend.Position = xlLegendPositionBottom
     except Exception:
         pass
 
-    bar = ws.ChartObjects().Add(CHART_LEFT, BAR_TOP, CHART_W, BAR_H).Chart
-    bar.ChartType = xlColumnStacked
-    bar.SetSourceData(Source=bar_rng, PlotBy=xlRows)   # each domain a stacked series
+    bar = _new_chart(ws, xlColumnStacked, left, top + CHART_H + 15, CHART_W, CHART_H)
+    for dom, vals in dom_rows:
+        sr = bar.SeriesCollection().NewSeries()
+        sr.Name = dom
+        sr.Values = vals
+        sr.XValues = cats_rng
+        col = DOMAIN_COLORS.get(dom)
+        if col is not None:
+            try:
+                sr.Format.Fill.ForeColor.RGB = col
+            except Exception:
+                pass
+        try:
+            sr.ApplyDataLabels()
+        except Exception:
+            pass
     bar.HasTitle = True
-    bar.ChartTitle.Text = "Category wise Risks"
+    try:
+        bar.ChartTitle.Text = "Category wise Risks"
+    except Exception:
+        pass
+    try:
+        bar.HasLegend = True
+        bar.Legend.Position = xlLegendPositionBottom
+    except Exception:
+        pass
 
 
 # --------------------------------------------------------------------------- #
@@ -303,41 +374,64 @@ def render_workbook(out_path, data_csv, reports):
         _write_data_sheet(wb, data_csv)
         cache = wb.PivotCaches().Create(SourceType=xlDatabase, SourceData=TABLE_NAME)
 
+        cws = wb.Worksheets.Add(After=wb.Worksheets(wb.Worksheets.Count))
+        cws.Name = CHART_SHEET
+        chart_row = 1
+
         for rep in reports:
             ws = wb.Worksheets.Add(After=wb.Worksheets(wb.Worksheets.Count))
             ws.Name = rep["sheet"]
             pt_name = "pt_" + rep["sheet"].replace("-", "_")
             total = rep["stats"].total
 
-            # Banner sits below the pivot body; default row when there's no
-            # pivot (zero-row zone) or if the pivot build fails.
             banner_row = BANNER_ROW
             if total > 0:
                 try:
                     pt = _build_pivot(cache, ws, rep["org"], pt_name)
                     _style_pivot(pt, ws)
                     tr = pt.TableRange1
-                    banner_row = tr.Row + tr.Rows.Count + 1   # clear of the pivot
+                    banner_row = tr.Row + tr.Rows.Count + 2   # clear of the pivot
                 except Exception as e:
                     print(f"  WARN: pivot build failed on {rep['sheet']}: {e}")
 
-            # Title + narrative never write into the pivot body now; still guard
-            # so one sheet's failure can't abort the whole SaveAs.
             try:
                 _write_banner_title(ws, rep["title"], banner_row)
-                _write_narrative(ws, rep["narrative"], banner_row + 2)
+                _write_narrative(ws, rep["narrative"], banner_row + 1)
             except Exception as e:
                 print(f"  WARN: title/narrative failed on {rep['sheet']}: {e}")
 
             if total > 0:
                 try:
-                    pie_rng, bar_rng = _write_helper(ws, rep["stats"])
-                    _add_charts(ws, pie_rng, bar_rng)
-                except Exception as e:
-                    print(f"  WARN: charts failed on {rep['sheet']}: {e}")
+                    pie_x, pie_v, cats_rng, dom_rows = _write_chart_block(
+                        cws, chart_row, rep["stats"])
+                    _add_charts(ws, banner_row + 1, pie_x, pie_v, cats_rng, dom_rows)
+                    chart_row += len(rep["stats"].by_domain) + 3
+                except Exception:
+                    print(f"  WARN: charts failed on {rep['sheet']}:")
+                    traceback.print_exc()
+
+            try:
+                ws.Activate()
+                excel.ActiveWindow.DisplayGridlines = False
+            except Exception:
+                pass
             print(f"  built {rep['sheet']}: total={total}")
 
+        # tab order: zone sheets first, then Data; ChartData hidden at the end
         wb.Worksheets(DATA_SHEET).Move(After=wb.Worksheets(wb.Worksheets.Count))
+        try:
+            cws.Move(After=wb.Worksheets(wb.Worksheets.Count))
+        except Exception:
+            pass
+        try:
+            cws.Visible = xlSheetHidden
+        except Exception:
+            pass
+        try:
+            wb.Worksheets(reports[0]["sheet"]).Activate()
+        except Exception:
+            pass
+
         wb.SaveAs(os.path.abspath(out_path), FileFormat=xlOpenXMLWorkbook)
         print(f"Saved: {out_path}")
     finally:
