@@ -166,8 +166,6 @@ def test_test_connection_exception_branch(monkeypatch):
     assert r["ok"] is False
     assert "boom" in r["message"]
 
-import json as _json
-
 def test_get_config_masked(monkeypatch):
     monkeypatch.setattr(dashboard, "load_config",
         lambda p: {"hostname": "h", "client_id": "c", "client_secret": "S",
@@ -205,3 +203,61 @@ def test_post_config_saves_and_masks(monkeypatch):
     status, _c, out = dashboard.handle_post("/api/config", body)
     j = _json.loads(out)
     assert status == 200 and "client_secret" not in j and j["hostname"] == "h2"
+
+
+def test_post_config_test_uses_saved_secret_fallback(monkeypatch):
+    saved_cfg = {
+        "hostname": "savedhost",
+        "client_id": "savedid",
+        "client_secret": "SAVEDSEC",
+        "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6},
+    }
+    monkeypatch.setattr(dashboard, "load_config", lambda p: saved_cfg)
+
+    recorded = {}
+
+    def fake_test_connection(host, cid, sec):
+        recorded["host"] = host
+        recorded["cid"] = cid
+        recorded["sec"] = sec
+        return {"ok": True, "message": "ok"}
+
+    monkeypatch.setattr(dashboard, "test_connection", fake_test_connection)
+
+    body = _json.dumps({"hostname": "h2"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config/test", body)
+    assert status == 200
+    assert _json.loads(out)["ok"] is True
+    assert recorded["host"] == "h2"
+    assert recorded["sec"] == "SAVEDSEC"
+
+
+def test_post_config_real_roundtrip_preserves_secret(monkeypatch, tmp_path):
+    from config_store import save_config as real_save_config
+
+    cfg_file = tmp_path / "config.json"
+    monkeypatch.setattr(dashboard, "CONFIG_FILE", cfg_file)
+
+    initial = {
+        "hostname": "orighost",
+        "client_id": "origid",
+        "client_secret": "ORIGSEC",
+        "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6},
+    }
+    real_save_config(str(cfg_file), initial, {
+        "hostname": "", "client_id": "", "client_secret": "",
+        "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6},
+    })
+
+    body = _json.dumps({"hostname": "newhost"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config", body)
+    j = _json.loads(out)
+
+    assert status == 200
+    assert "client_secret" not in j
+    assert j.get("has_secret") is True
+    assert j["hostname"] == "newhost"
+
+    on_disk = _json.loads(cfg_file.read_text(encoding="utf-8"))
+    assert on_disk["client_secret"] == "ORIGSEC"
+    assert on_disk["hostname"] == "newhost"

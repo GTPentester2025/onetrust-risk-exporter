@@ -261,6 +261,7 @@ def main(argv=None):
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped.")
+        stop_event.set()
         server.server_close()
 
 
