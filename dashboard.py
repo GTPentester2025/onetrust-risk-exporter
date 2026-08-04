@@ -95,8 +95,11 @@ def load_cached():
 def list_views():
     if not VIEWS_FILE.exists():
         return []
-    data = json.loads(VIEWS_FILE.read_text(encoding="utf-8"))
-    return [v.get("name", "") for v in data.get("views", []) if v.get("name")]
+    try:
+        data = json.loads(VIEWS_FILE.read_text(encoding="utf-8"))
+        return [v.get("name", "") for v in data.get("views", []) if v.get("name")]
+    except (json.JSONDecodeError, OSError):
+        return []
 
 
 INDEX = HERE / "index.html"

@@ -815,6 +815,23 @@
     elInsights.classList.add('hidden');
   }
 
+  // ── Category helpers ──────────────────────────────────────────────────────
+  // Display-friendly label: "(blank)" → "Uncategorized"; everything else unchanged.
+  function catLabel(c) {
+    return c === '(blank)' ? 'Uncategorized' : c;
+  }
+
+  // Union of cats: cat_order members present in z.by_cat (in order), then any
+  // remaining keys from z.by_cat NOT in cat_order (e.g. "(blank)"), in their
+  // natural iteration order. This guarantees every category gets a column/segment.
+  function activeCatsFor(z) {
+    const byCat = z.by_cat || {};
+    const known = (payload.cat_order || []).filter(cat => cat in byCat);
+    const knownSet = new Set(known);
+    const extras = Object.keys(byCat).filter(cat => !knownSet.has(cat));
+    return [...known, ...extras];
+  }
+
   // ── Render KPIs ───────────────────────────────────────────────────────────
   function renderKpis(z) {
     elKpis.innerHTML = '';
@@ -851,7 +868,7 @@
       }
       const card3 = makeKpiCard(
         'Top Category',
-        topCat || '—',
+        topCat ? catLabel(topCat) : '—',
         topCat ? `${topCount} risk${topCount !== 1 ? 's' : ''}` : 'No data'
       );
       elKpis.appendChild(card3);
@@ -932,9 +949,9 @@
   function renderBar(z) {
     if (barChart) { barChart.destroy(); barChart = null; }
     const domains = (z.by_domain || []).map(p => p[0]);
-    const activeCats = (payload.cat_order || []).filter(cat => cat in (z.by_cat || {}));
+    const activeCats = activeCatsFor(z);
     const datasets = activeCats.map(cat => ({
-      label: cat,
+      label: catLabel(cat),
       data: domains.map(dom => (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0),
       backgroundColor: CAT_COLORS[cat] || '#94A3B8',
       borderColor: 'transparent',
@@ -1019,15 +1036,17 @@
     thead.innerHTML = '';
     tbody.innerHTML = '';
 
-    const activeCats = (payload.cat_order || []).filter(cat => cat in (z.by_cat || {}));
+    const activeCats = activeCatsFor(z);
     // Columns: domain, ...cats, total
+    // Display labels: catLabel() converts "(blank)" → "Uncategorized" for headers
     const cols = ['Domain', ...activeCats, 'Total'];
+    const colLabels = ['Domain', ...activeCats.map(catLabel), 'Total'];
 
     // Build header
     const tr = document.createElement('tr');
     cols.forEach((col, i) => {
       const th = document.createElement('th');
-      th.textContent = col;
+      th.textContent = colLabels[i];
       if (col === 'Total') th.classList.add('total-col');
       // Sort indicator
       const ind = document.createElement('span');
@@ -1190,15 +1209,19 @@
         body: JSON.stringify({ hostname, client_id, client_secret, view }),
       });
 
-      const j = await r.json();
+      // M-1: Guard JSON parse — a non-JSON error body (e.g. proxy 502) must not
+      // throw a confusing SyntaxError; fall back to a plain HTTP-status message.
+      const text = await r.text();
+      let j;
+      try { j = JSON.parse(text); } catch (_) { j = null; }
 
-      if (!r.ok || j.error) {
-        const msg = j.error || `HTTP ${r.status}`;
+      if (!r.ok || (j && j.error)) {
+        const msg = (j && j.error) || `HTTP ${r.status}`;
         setStatus(`Error: ${msg}`, 'error');
         return;
       }
 
-      applyPayload(j, j.source || 'api');
+      applyPayload(j, (j && j.source) || 'api');
 
     } catch (e) {
       setStatus(`Error: ${e.message || 'Network error'}`, 'error');
