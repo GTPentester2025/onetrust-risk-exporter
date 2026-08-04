@@ -135,7 +135,8 @@
 
     .input-group input,
     .input-group select {
-      height: 36px;
+      height: 44px; /* M-1: touch target ≥44px */
+      min-height: 44px;
       padding: 0 var(--sp-2);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
@@ -269,7 +270,8 @@
     }
 
     .zone-btn {
-      height: 36px;
+      height: 44px; /* M-2: touch target ≥44px */
+      min-height: 44px;
       padding: 0 var(--sp-4);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
@@ -737,17 +739,20 @@
   function setStatus(text, cls) {
     elStatus.textContent = text;
     elStatus.className   = cls || '';
-    if (cls === 'error') {
-      elStatus.setAttribute('role', 'alert');
-    } else {
-      elStatus.setAttribute('role', 'status');
-    }
+    // I-1: Keep role static (role="status" aria-live="polite" set in HTML).
+    // Convey error state via CSS class only — do NOT mutate role at runtime.
+    // M-3: Set title so hover reveals full text when truncated.
+    elStatus.title = text;
   }
 
   function showSpinner(show) {
-    // Replace icon with spinner while fetching
+    // C-1: Always look up the element fresh by id — never use the stale
+    // elFetchIcon constant, which becomes invalid after outerHTML replacement.
     if (show) {
-      elFetchIcon.outerHTML = '<span id="fetchIcon" class="spinner" aria-hidden="true"></span>';
+      const icon = $('fetchIcon');
+      if (icon) {
+        icon.outerHTML = '<span id="fetchIcon" class="spinner" aria-hidden="true"></span>';
+      }
     } else {
       const sp = $('fetchIcon');
       if (sp) {
@@ -778,7 +783,7 @@
     ZONE_ORDER.forEach(code => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.role = 'tab';
+      btn.setAttribute('role', 'tab'); // I-2: use setAttribute, not .role property
       btn.className = 'zone-btn';
       btn.textContent = code;
       btn.dataset.zone = code;
@@ -879,6 +884,10 @@
     const labels = (z.by_domain || []).map(p => p[0]);
     const data   = (z.by_domain || []).map(p => p[1]);
     const colors = labels.map((_, i) => PIE_PALETTE[i % PIE_PALETTE.length]);
+    // M-6: Chart.js cannot resolve CSS custom properties — read the computed
+    // value at render time so slice borders match the actual card surface.
+    const sliceBorder = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-surface').trim() || '#FFFFFF';
     const ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
       type: 'pie',
@@ -887,7 +896,7 @@
         datasets: [{
           data,
           backgroundColor: colors,
-          borderColor: 'var(--color-surface)',
+          borderColor: sliceBorder,
           borderWidth: 2,
           hoverBorderWidth: 3,
         }]
@@ -1153,7 +1162,9 @@
         showEmpty();
         setStatus('Idle — enter credentials and click Fetch', '');
       } else {
-        applyPayload(j, j.source || 'cache');
+        // I-3: Always pass literal 'cache' — j.source may be 'api' for a
+        // cached payload, which would mislabel the source in the status bar.
+        applyPayload(j, 'cache');
       }
     } catch (e) {
       showEmpty();
