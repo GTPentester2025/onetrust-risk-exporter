@@ -31,9 +31,9 @@ def build_payload(rows, view=None, generated_at=None, source=None):
     payload = {
         "generated_at": generated_at.replace(microsecond=0).isoformat(),
         "view": view,
-        "cat_order": stats.CAT_ORDER,
+        "cat_order": list(stats.CAT_ORDER),
         "zones": zones,
     }
-    if source:
+    if source is not None:
         payload["source"] = source
     return payload
