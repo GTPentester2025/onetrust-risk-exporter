@@ -10,6 +10,8 @@ venv/
 
 # Secrets / local config
 .env
+config.json
+*.pptx
 
 # Real view filters (production UUIDs) - keep local only, never on git
 views.json
