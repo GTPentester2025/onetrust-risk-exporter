@@ -171,24 +171,56 @@ def _json_resp(obj, status=200):
     return status, "application/json; charset=utf-8", json.dumps(obj).encode("utf-8")
 
 
+def _job_status():
+    j = JOB
+    return {"state": j["state"],
+            "last_run": j["last_run"].isoformat() if j["last_run"] else None,
+            "rows": j["rows"], "message": j["message"], "source": j["source"]}
+
+
+def _handle_ppt():
+    return _json_resp({"error": "PPT not available"}, 500)
+
+
 def handle_get(path):
     if path == "/" or path == "/index.html":
         try:
             return 200, "text/html; charset=utf-8", INDEX.read_bytes()
         except FileNotFoundError:
             return _json_resp({"error": "index.html not found"}, 500)
+    if path == "/api/config":
+        return _json_resp(mask_config(load_config(str(CONFIG_FILE))))
+    if path == "/api/status":
+        return _json_resp(_job_status())
     if path == "/api/views":
         return _json_resp({"views": list_views()})
     if path == "/api/data":
         payload = load_cached()
         return _json_resp(payload if payload else {"empty": True})
+    if path == "/api/ppt":
+        return _handle_ppt()          # defined in Task 5
     return _json_resp({"error": "not found"}, 404)
 
 
 def handle_post(path, body_bytes):
-    if path != "/api/fetch":
+    try:
+        if path == "/api/fetch":
+            r = start_fetch_async()
+            return _json_resp(r, 202)
+        if path == "/api/config":
+            body = json.loads(body_bytes or b"{}")
+            merged = save_config(str(CONFIG_FILE), body, load_config(str(CONFIG_FILE)))
+            return _json_resp(mask_config(merged))
+        if path == "/api/config/test":
+            body = json.loads(body_bytes or b"{}")
+            existing = load_config(str(CONFIG_FILE))
+            host = body.get("hostname") or existing["hostname"]
+            cid = body.get("client_id") or existing["client_id"]
+            sec = body.get("client_secret") or existing["client_secret"]
+            return _json_resp(test_connection(host, cid, sec))
         return _json_resp({"error": "not found"}, 404)
-    return _json_resp(start_fetch_async(), 202)
+    except Exception as e:
+        return _json_resp({"error": str(e)}, 500)
 
 
 def make_handler():
@@ -221,6 +253,8 @@ def main(argv=None):
     url = f"http://127.0.0.1:{args.port}/"
     server = HTTPServer(("127.0.0.1", args.port), make_handler())
     print(f"Dashboard at {url}  (Ctrl-C to stop)")
+    stop_event = threading.Event()
+    threading.Thread(target=_scheduler_loop, args=(stop_event,), daemon=True).start()
     if not args.no_browser:
         webbrowser.open(url)
     try:

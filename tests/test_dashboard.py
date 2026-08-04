@@ -165,3 +165,43 @@ def test_test_connection_exception_branch(monkeypatch):
     r = dashboard.test_connection("h", "c", "s")
     assert r["ok"] is False
     assert "boom" in r["message"]
+
+import json as _json
+
+def test_get_config_masked(monkeypatch):
+    monkeypatch.setattr(dashboard, "load_config",
+        lambda p: {"hostname": "h", "client_id": "c", "client_secret": "S",
+                   "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}})
+    status, ctype, body = dashboard.handle_get("/api/config")
+    j = _json.loads(body)
+    assert status == 200 and "client_secret" not in j and j["has_secret"] is True
+
+def test_get_status(monkeypatch):
+    dashboard.reset_job()
+    status, _c, body = dashboard.handle_get("/api/status")
+    j = _json.loads(body)
+    assert j["state"] == "idle" and j["last_run"] is None
+
+def test_post_fetch_starts(monkeypatch):
+    monkeypatch.setattr(dashboard, "start_fetch_async", lambda: {"started": True, "running": False})
+    status, _c, body = dashboard.handle_post("/api/fetch", b"")
+    assert status == 202 and _json.loads(body)["started"] is True
+
+def test_post_config_test(monkeypatch):
+    monkeypatch.setattr(dashboard, "test_connection", lambda h, c, s: {"ok": True, "message": "Connection OK"})
+    body = _json.dumps({"hostname": "h", "client_id": "c", "client_secret": "s"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config/test", body)
+    assert status == 200 and _json.loads(out)["ok"] is True
+
+def test_post_config_saves_and_masks(monkeypatch):
+    saved = {}
+    monkeypatch.setattr(dashboard, "load_config", lambda p: {"hostname": "", "client_id": "",
+        "client_secret": "OLD", "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}})
+    def fake_save(p, incoming, existing):
+        saved.update(existing); saved.update({k: v for k, v in incoming.items() if v})
+        return {**existing, **{k: v for k, v in incoming.items() if v}}
+    monkeypatch.setattr(dashboard, "save_config", fake_save)
+    body = _json.dumps({"hostname": "h2"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config", body)
+    j = _json.loads(out)
+    assert status == 200 and "client_secret" not in j and j["hostname"] == "h2"
