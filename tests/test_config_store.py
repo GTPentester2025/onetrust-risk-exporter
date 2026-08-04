@@ -1,4 +1,5 @@
 import json
+import datetime as dt
 import config_store as cs
 
 def test_load_missing_returns_default(tmp_path):
@@ -56,3 +57,29 @@ def test_is_configured_all_fields():
     assert cs.is_configured({**base, "hostname": ""}) is False
     assert cs.is_configured({**base, "client_id": ""}) is False
     assert cs.is_configured(base) is True
+
+def test_due_off_never():
+    assert cs.next_run_due({"mode": "off"}, None, dt.datetime(2026,8,5,10,0)) is False
+
+def test_due_hourly():
+    now = dt.datetime(2026,8,5,10,0)
+    assert cs.next_run_due({"mode": "hourly"}, None, now) is True
+    assert cs.next_run_due({"mode": "hourly"}, now - dt.timedelta(minutes=30), now) is False
+    assert cs.next_run_due({"mode": "hourly"}, now - dt.timedelta(hours=2), now) is True
+
+def test_due_interval():
+    now = dt.datetime(2026,8,5,10,0)
+    s = {"mode": "interval", "interval_hours": 6}
+    assert cs.next_run_due(s, now - dt.timedelta(hours=5), now) is False
+    assert cs.next_run_due(s, now - dt.timedelta(hours=7), now) is True
+
+def test_due_daily():
+    s = {"mode": "daily", "time": "06:00"}
+    # before scheduled time today, never ran -> not due
+    assert cs.next_run_due(s, None, dt.datetime(2026,8,5,5,0)) is False
+    # after scheduled time today, never ran -> due
+    assert cs.next_run_due(s, None, dt.datetime(2026,8,5,7,0)) is True
+    # already ran after today's scheduled instant -> not due
+    assert cs.next_run_due(s, dt.datetime(2026,8,5,6,30), dt.datetime(2026,8,5,7,0)) is False
+    # last ran yesterday, now past today's time -> due
+    assert cs.next_run_due(s, dt.datetime(2026,8,4,6,30), dt.datetime(2026,8,5,7,0)) is True

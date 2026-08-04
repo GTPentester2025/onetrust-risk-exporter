@@ -1,5 +1,6 @@
 """Pure config load/save/mask + schedule logic for the dashboard. No HTTP/threads."""
 import copy
+import datetime
 import json
 
 DEFAULT_CONFIG = {
@@ -51,3 +52,22 @@ def mask_config(cfg):
 def is_configured(cfg):
     return all(bool((cfg.get(k) or "").strip())
                for k in ("hostname", "client_id", "client_secret"))
+
+
+def next_run_due(schedule, last_run, now):
+    mode = (schedule or {}).get("mode", "off")
+    if mode == "off":
+        return False
+    if mode == "hourly":
+        return last_run is None or (now - last_run) >= datetime.timedelta(hours=1)
+    if mode == "interval":
+        hrs = schedule.get("interval_hours", 6) or 6
+        return last_run is None or (now - last_run) >= datetime.timedelta(hours=hrs)
+    if mode == "daily":
+        hh, mm = (schedule.get("time", "06:00") or "06:00").split(":")
+        scheduled_today = now.replace(hour=int(hh), minute=int(mm),
+                                      second=0, microsecond=0)
+        if now < scheduled_today:
+            return False
+        return last_run is None or last_run < scheduled_today
+    return False
