@@ -102,10 +102,6 @@ def run_fetch_job(*, config_loader=None, runner=subprocess.run,
                   py=sys.executable, now_fn=None):
     config_loader = config_loader or (lambda: load_config(str(CONFIG_FILE)))
     now_fn = now_fn or datetime.datetime.now
-    with _job_lock:
-        if JOB["state"] == "running":
-            return
-        JOB["state"] = "running"; JOB["message"] = ""
     try:
         n = do_fetch(config_loader(), runner=runner, py=py)
         JOB.update(state="done", rows=n, last_run=now_fn(), source="api", message="")
@@ -117,6 +113,8 @@ def start_fetch_async():
     with _job_lock:
         if JOB["state"] == "running":
             return {"started": False, "running": True}
+        JOB["state"] = "running"
+        JOB["message"] = ""
     t = threading.Thread(target=run_fetch_job, daemon=True)
     t.start()
     return {"started": True, "running": False}

@@ -97,6 +97,7 @@ def test_run_fetch_job_sets_done(monkeypatch):
     assert dashboard.JOB["state"] == "done"
     assert dashboard.JOB["rows"] == 7
     assert dashboard.JOB["last_run"] == fixed
+    assert dashboard.JOB["source"] == "api"
 
 def test_run_fetch_job_error(monkeypatch):
     dashboard.reset_job()
@@ -116,3 +117,51 @@ def test_test_connection_fail(monkeypatch):
     monkeypatch.setattr(dashboard, "get_token", boom)
     r = dashboard.test_connection("h", "c", "s")
     assert r["ok"] is False and "access_token" in r["message"]
+
+def test_start_fetch_async_single_flight(monkeypatch):
+    # Branch 1: already running -> no new thread, returns {started:False, running:True}
+    dashboard.reset_job()
+    dashboard.JOB["state"] = "running"
+    result = dashboard.start_fetch_async()
+    assert result == {"started": False, "running": True}
+
+    # Branch 2: idle -> claims slot under lock, spawns thread, returns {started:True}
+    dashboard.reset_job()
+    monkeypatch.setattr(dashboard, "run_fetch_job", lambda **kw: None)
+    result = dashboard.start_fetch_async()
+    assert result["started"] is True
+    # The slot was claimed under the lock before the (no-op) thread ran,
+    # so state remains "running" (no-op never sets done/error).
+    assert dashboard.JOB["state"] == "running"
+
+def test_scheduler_tick_starts_when_due(monkeypatch):
+    started_calls = []
+    monkeypatch.setattr(dashboard, "start_fetch_async",
+                        lambda: started_calls.append(1) or {"started": True, "running": False})
+    cfg = {
+        "hostname": "h", "client_id": "c", "client_secret": "s",
+        "schedule": {"mode": "hourly", "time": "06:00", "interval_hours": 1},
+    }
+    dashboard.reset_job()
+    result = dashboard.scheduler_tick(
+        datetime.datetime(2026, 8, 5, 10, 0),
+        config_loader=lambda: cfg,
+    )
+    assert result is True
+    assert started_calls  # start_fetch_async was called
+
+def test_scheduler_tick_skips_when_not_configured(monkeypatch):
+    cfg = {"hostname": "", "client_id": "", "client_secret": "", "schedule": {}}
+    dashboard.reset_job()
+    result = dashboard.scheduler_tick(
+        datetime.datetime(2026, 8, 5, 10, 0),
+        config_loader=lambda: cfg,
+    )
+    assert result is False
+
+def test_test_connection_exception_branch(monkeypatch):
+    monkeypatch.setattr(dashboard, "get_token",
+                        lambda h, c, s: (_ for _ in ()).throw(ConnectionError("boom")))
+    r = dashboard.test_connection("h", "c", "s")
+    assert r["ok"] is False
+    assert "boom" in r["message"]
