@@ -501,7 +501,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: var(--fg-dim);
+      color: var(--fg-muted);
     }
 
     .kpi-value {
@@ -754,6 +754,9 @@
       }
     }
 
+    /* ── Table panel: allow sticky thead (overflow:hidden disables sticky) ── */
+    #table-panel { overflow: visible; }
+
     /* ── Utility ── */
     .hidden { display: none !important; }
   </style>
@@ -805,7 +808,7 @@
   <!-- Zone filter + screenshot button -->
   <div id="zones-panel">
     <div id="zones" role="tablist" aria-label="Zone filter"></div>
-    <button id="screenshotBtn" type="button" title="Download zone image">
+    <button id="screenshotBtn" type="button" title="Download zone image" aria-label="Download zone image">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7 10 12 15 17 10"/>
@@ -816,7 +819,7 @@
   </div>
 
   <!-- Empty state -->
-  <div id="empty" role="status">
+  <div id="empty">
     <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
     </svg>
@@ -1073,7 +1076,6 @@
 
   // chartToOpaqueDataURL: composites chartCanvas onto an opaque surface background
   function chartToOpaqueDataURL(chartCanvas) {
-    var dpr = window.devicePixelRatio || 1;
     var w = chartCanvas.width;
     var h = chartCanvas.height;
     var tmp = document.createElement('canvas');
@@ -1102,8 +1104,7 @@
           // fallback to CSV
           var csv = csvFallbackFn ? csvFallbackFn() : null;
           if (csv) {
-            copyText(csv);
-            toast('Copied data (CSV)');
+            navigator.clipboard.writeText(csv).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
           } else {
             toast('Copy failed');
           }
@@ -1111,8 +1112,7 @@
       } catch(e) {
         var csv2 = csvFallbackFn ? csvFallbackFn() : null;
         if (csv2) {
-          copyText(csv2);
-          toast('Copied data (CSV)');
+          navigator.clipboard.writeText(csv2).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
         } else {
           toast('Copy failed');
         }
@@ -1120,8 +1120,7 @@
     } else {
       var csv3 = csvFallbackFn ? csvFallbackFn() : null;
       if (csv3) {
-        copyText(csv3);
-        toast('Copied data (CSV)');
+        navigator.clipboard.writeText(csv3).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
       } else {
         toast('Copy failed');
       }
