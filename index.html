@@ -374,7 +374,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.09em;
-      color: var(--fg-dim);
+      color: var(--fg-muted);
     }
 
     .tile-toolbar {
@@ -682,7 +682,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--fg-dim);
+      color: var(--fg-muted);
     }
 
     .field-group input,
@@ -713,7 +713,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--fg-dim);
+      color: var(--fg-muted);
       border-bottom: 1px solid var(--border);
       padding-bottom: 6px;
       margin-bottom: 0;
@@ -1131,7 +1131,6 @@
       </div>
     </div>
     <div id="settings-footer">
-      <button class="modal-btn" id="cfgTest2" type="button" style="display:none"></button>
       <button class="modal-btn" id="cfgSave" type="button">Save</button>
     </div>
   </div>
@@ -1668,8 +1667,16 @@
   function doRefresh() {
     elRefreshBtn.disabled = true;
     fetch('/api/fetch', { method: 'POST' }).then(function(r) {
+      if (!r.ok) {
+        return r.json().catch(function() { return {}; }).then(function(j) {
+          setStatus('Error: ' + (j.error || ('HTTP ' + r.status)), 'error');
+          elRefreshBtn.disabled = false;
+          return null;
+        });
+      }
       return r.json();
     }).then(function(j) {
+      if (!j) return;  // already handled above (HTTP error)
       if (j.running || j.started) {
         var chip = document.createElement('span');
         chip.className = 'spinner'; chip.setAttribute('aria-hidden','true');
@@ -1679,6 +1686,9 @@
         elStatus.className = 'running';
         stopPoll();
         pollTimer = setTimeout(pollStatus, 2000);
+      } else {
+        // Neither running nor started — re-enable so button is never stuck
+        elRefreshBtn.disabled = false;
       }
     }).catch(function(e) {
       setStatus('Error: ' + (e.message || 'Network error'), 'error');
@@ -1755,8 +1765,8 @@
     var host = $('cfgHost').value.trim();
     var cid  = $('cfgId').value.trim();
     var sec  = $('cfgSecret').value;
-    if (host) body.hostname = host;
-    if (cid)  body.client_id = cid;
+    body.hostname = host;         // always send (allows clearing a bad hostname)
+    body.client_id = cid;        // always send (allows clearing a bad client_id)
     if (sec)  body.client_secret = sec;   // only include if non-blank
     var mode = $('cfgMode').value;
     var sched = { mode: mode };
