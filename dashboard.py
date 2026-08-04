@@ -108,7 +108,10 @@ def _json_resp(obj, status=200):
 
 def handle_get(path):
     if path == "/" or path == "/index.html":
-        return 200, "text/html; charset=utf-8", INDEX.read_bytes()
+        try:
+            return 200, "text/html; charset=utf-8", INDEX.read_bytes()
+        except FileNotFoundError:
+            return _json_resp({"error": "index.html not found"}, 500)
     if path == "/api/views":
         return _json_resp({"views": list_views()})
     if path == "/api/data":
@@ -142,7 +145,7 @@ def make_handler():
             self._send(*handle_get(self.path))
 
         def do_POST(self):
-            length = int(self.headers.get("Content-Length", 0))
+            length = max(0, int(self.headers.get("Content-Length", 0)))
             body = self.rfile.read(length) if length else b""
             self._send(*handle_post(self.path, body))
 
