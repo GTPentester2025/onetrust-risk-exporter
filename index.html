@@ -8,67 +8,33 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
-    /* ── Design tokens ── */
+    /* ── Design tokens (dark+gold, single theme) ── */
     :root {
-      --color-primary: #1E40AF;
-      --color-on-primary: #FFFFFF;
-      --color-secondary: #3B82F6;
-      --color-accent: #D97706;
-      --color-background: #F8FAFC;
-      --color-foreground: #1E3A8A;
-      --color-muted: #E9EEF6;
-      --color-border: #DBEAFE;
-      --color-destructive: #DC2626;
-      --color-ring: #1E40AF;
-      --color-surface: #FFFFFF;
-      --color-text: #0F172A;
-      --color-text-muted: #475569;
-      --color-status-idle-bg: #E9EEF6;
-      --color-status-idle-fg: #475569;
-      --color-status-fetching-bg: #FEF3C7;
-      --color-status-fetching-fg: #92400E;
-      --color-status-loaded-bg: #D1FAE5;
-      --color-status-loaded-fg: #065F46;
-      --color-status-error-bg: #FEE2E2;
-      --color-status-error-fg: #991B1B;
-      --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.05);
-      --radius: 6px;
-      --sp-1: 4px;
-      --sp-2: 8px;
-      --sp-3: 12px;
-      --sp-4: 16px;
-      --sp-5: 20px;
-      --sp-6: 24px;
-      --font-sans: 'Fira Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', ui-monospace, monospace;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --color-primary: #3B82F6;
-        --color-on-primary: #FFFFFF;
-        --color-secondary: #60A5FA;
-        --color-accent: #F59E0B;
-        --color-background: #0B1220;
-        --color-foreground: #E2E8F0;
-        --color-muted: #1A2540;
-        --color-border: #24324A;
-        --color-destructive: #F87171;
-        --color-ring: #3B82F6;
-        --color-surface: #111A2E;
-        --color-text: #E2E8F0;
-        --color-text-muted: #94A3B8;
-        --color-status-idle-bg: #1E293B;
-        --color-status-idle-fg: #94A3B8;
-        --color-status-fetching-bg: #44300A;
-        --color-status-fetching-fg: #FCD34D;
-        --color-status-loaded-bg: #064E3B;
-        --color-status-loaded-fg: #6EE7B7;
-        --color-status-error-bg: #450A0A;
-        --color-status-error-fg: #FCA5A5;
-        --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-      }
+      --bg:#0a0806;
+      --bg-2:#0f0c08;
+      --surface:#14100a;
+      --surface-2:#1a150d;
+      --surface-3:#221b10;
+      --border:#2e2617;
+      --border-2:#40351f;
+      --fg:#f6f2e8;
+      --fg-muted:#c4b79b;
+      --fg-dim:#897c64;
+      --gold:#e8c810;
+      --gold-2:#f5da3a;
+      --gold-deep:#c99a1e;
+      --cream:#cdbf9f;
+      --soon:#a89572;
+      --live:#34d399;
+      --ring:#e8c810;
+      --radius:14px;
+      --radius-lg:20px;
+      --maxw:1140px;
+      --ease:cubic-bezier(0.22,1,0.36,1);
+      --font:"Fira Sans","Segoe UI",system-ui,sans-serif;
+      --mono:"Fira Code",ui-monospace,Consolas,monospace;
     }
 
     /* ── Reset & base ── */
@@ -77,29 +43,51 @@
     html { font-size: 14px; }
 
     body {
-      font-family: var(--font-sans);
-      background: var(--color-background);
-      color: var(--color-text);
+      font-family: var(--font);
+      background:
+        radial-gradient(900px 480px at 15% -8%, rgba(232,200,16,0.11), transparent 60%),
+        radial-gradient(760px 460px at 100% 0%, rgba(245,218,58,0.06), transparent 55%),
+        var(--bg);
+      color: var(--fg);
       line-height: 1.5;
       min-height: 100vh;
+      position: relative;
     }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(232,200,16,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(232,200,16,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(1200px 700px at 50% 0%, #000 30%, transparent 85%);
+      -webkit-mask-image: radial-gradient(1200px 700px at 50% 0%, #000 30%, transparent 85%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ensure content is above grid overlay */
+    #header, #main { position: relative; z-index: 1; }
 
     /* ── Focus visible ── */
     :focus-visible {
-      outline: 2px solid var(--color-ring);
+      outline: 2px solid var(--ring);
       outline-offset: 2px;
-      border-radius: 2px;
+      border-radius: 4px;
     }
 
     /* ── Header bar ── */
     #header {
-      background: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
-      box-shadow: var(--shadow-card);
-      padding: var(--sp-3) var(--sp-6);
+      background: rgba(20,16,10,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
       display: flex;
       align-items: center;
-      gap: var(--sp-3);
+      gap: 12px;
       flex-wrap: wrap;
       position: sticky;
       top: 0;
@@ -107,13 +95,13 @@
     }
 
     #app-title {
-      font-family: var(--font-mono);
+      font-family: var(--mono);
       font-weight: 700;
       font-size: 1rem;
-      color: var(--color-primary);
+      color: var(--gold);
       white-space: nowrap;
       letter-spacing: -0.02em;
-      margin-right: var(--sp-2);
+      margin-right: 8px;
       flex-shrink: 0;
     }
 
@@ -130,66 +118,75 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--color-text-muted);
+      color: var(--fg-dim);
     }
 
-    .input-group input,
-    .input-group select {
-      height: 44px; /* M-1: touch target ≥44px */
+    .input-group input {
+      height: 44px;
       min-height: 44px;
-      padding: 0 var(--sp-2);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      background: var(--color-background);
-      color: var(--color-text);
-      font-family: var(--font-sans);
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--cream);
+      font-family: var(--font);
       font-size: 0.85rem;
-      transition: border-color 150ms, box-shadow 150ms;
+      transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
     }
 
-    .input-group input:hover,
-    .input-group select:hover {
-      border-color: var(--color-secondary);
+    .input-group input:hover {
+      border-color: var(--border-2);
     }
 
-    .input-group input:focus,
-    .input-group select:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgb(59 130 246 / 0.2);
+    .input-group input:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px var(--ring);
       outline: none;
+    }
+
+    .input-group input[readonly] {
+      color: var(--fg-dim);
+      opacity: 0.7;
+      cursor: default;
     }
 
     #fetchBtn {
       display: flex;
       align-items: center;
-      gap: var(--sp-2);
-      padding: 0 var(--sp-5);
+      gap: 8px;
+      padding: 0 22px;
       height: 44px;
+      min-height: 44px;
       min-width: 100px;
-      background: var(--color-primary);
-      color: var(--color-on-primary);
+      background: linear-gradient(180deg, var(--gold-2), var(--gold));
+      color: #0a0806;
       border: none;
-      border-radius: var(--radius);
-      font-family: var(--font-sans);
-      font-weight: 600;
+      border-radius: 10px;
+      font-family: var(--font);
+      font-weight: 700;
       font-size: 0.9rem;
       cursor: pointer;
-      transition: background 150ms, transform 100ms, box-shadow 150ms;
+      transition: filter 150ms var(--ease), transform 100ms, box-shadow 150ms var(--ease);
       flex-shrink: 0;
       white-space: nowrap;
     }
 
     #fetchBtn:hover:not(:disabled) {
-      background: var(--color-secondary);
-      box-shadow: 0 2px 8px rgb(30 64 175 / 0.25);
+      filter: brightness(1.1);
+      box-shadow: 0 4px 16px rgba(232,200,16,0.35);
     }
 
     #fetchBtn:active:not(:disabled) {
       transform: translateY(1px);
     }
 
+    #fetchBtn:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
     #fetchBtn:disabled {
-      opacity: 0.6;
+      opacity: 0.55;
       cursor: not-allowed;
     }
 
@@ -198,8 +195,8 @@
       display: inline-block;
       width: 14px;
       height: 14px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: #fff;
+      border: 2px solid rgba(10,8,6,0.3);
+      border-top-color: #0a0806;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       flex-shrink: 0;
@@ -209,94 +206,144 @@
       to { transform: rotate(360deg); }
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      .spinner { animation: none; opacity: 0.7; }
-      * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
-    }
-
     /* ── Status pill ── */
     #status {
       display: inline-flex;
       align-items: center;
-      gap: var(--sp-2);
-      padding: 4px var(--sp-3);
+      gap: 6px;
+      padding: 4px 12px;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
       font-weight: 500;
       white-space: nowrap;
       max-width: 420px;
       overflow: hidden;
       text-overflow: ellipsis;
-      background: var(--color-status-idle-bg);
-      color: var(--color-status-idle-fg);
-      transition: background 200ms, color 200ms;
+      color: var(--fg-dim);
+      background: transparent;
+      transition: background 200ms var(--ease), color 200ms var(--ease);
     }
 
     #status.fetching {
-      background: var(--color-status-fetching-bg);
-      color: var(--color-status-fetching-fg);
+      color: var(--gold);
     }
 
     #status.loaded {
-      background: var(--color-status-loaded-bg);
-      color: var(--color-status-loaded-fg);
+      color: var(--live);
+    }
+
+    #status.loaded::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live);
+      flex-shrink: 0;
     }
 
     #status.error {
-      background: var(--color-status-error-bg);
-      color: var(--color-status-error-fg);
+      color: #f0736a;
+      background: rgba(240,115,106,0.1);
+      border-radius: 999px;
     }
 
     /* ── Main layout ── */
     #main {
-      max-width: 1440px;
+      max-width: var(--maxw);
       margin: 0 auto;
-      padding: var(--sp-4) var(--sp-6);
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: var(--sp-4);
+      gap: 16px;
     }
 
     /* ── Zone filter / tab strip ── */
+    #zones-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.45);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      transition: border-color 150ms var(--ease);
+    }
+
+    #zones-panel:hover {
+      border-color: var(--border-2);
+    }
+
     #zones {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--sp-2);
-      padding: var(--sp-3) var(--sp-4);
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
+      gap: 8px;
+      flex: 1;
     }
 
     .zone-btn {
-      height: 44px; /* M-2: touch target ≥44px */
+      height: 44px;
       min-height: 44px;
-      padding: 0 var(--sp-4);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      background: transparent;
-      color: var(--color-text-muted);
-      font-family: var(--font-mono);
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--fg-muted);
+      font-family: var(--mono);
       font-size: 0.8rem;
       font-weight: 500;
       cursor: pointer;
-      transition: background 150ms, color 150ms, border-color 150ms;
+      transition: background 150ms var(--ease), color 150ms var(--ease), border-color 150ms var(--ease), box-shadow 150ms var(--ease);
       min-width: 44px;
       white-space: nowrap;
     }
 
     .zone-btn:hover {
-      background: var(--color-muted);
-      color: var(--color-text);
-      border-color: var(--color-secondary);
+      border-color: var(--border-2);
+      color: var(--fg);
+      background: var(--surface-3);
     }
 
     .zone-btn[aria-selected="true"] {
-      background: var(--color-primary);
-      color: var(--color-on-primary);
-      border-color: var(--color-primary);
+      background: linear-gradient(180deg, var(--gold-2), var(--gold));
+      color: #0a0806;
+      border-color: transparent;
       font-weight: 700;
+      box-shadow: 0 2px 10px rgba(232,200,16,0.3);
+    }
+
+    /* ── Screenshot button (secondary style) ── */
+    #screenshotBtn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 16px;
+      height: 44px;
+      min-height: 44px;
+      background: var(--surface-2);
+      color: var(--gold);
+      border: 1px solid var(--gold-deep);
+      border-radius: 10px;
+      font-family: var(--font);
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 150ms var(--ease), box-shadow 150ms var(--ease), opacity 150ms;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #screenshotBtn:hover:not(:disabled) {
+      background: var(--surface-3);
+      box-shadow: 0 2px 10px rgba(232,200,16,0.2);
+    }
+
+    #screenshotBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     /* ── Empty state ── */
@@ -305,69 +352,148 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: var(--sp-4);
-      padding: 64px var(--sp-6);
+      gap: 16px;
+      padding: 64px 24px;
       text-align: center;
-      color: var(--color-text-muted);
+      color: var(--fg-dim);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
     }
 
     #empty .empty-icon {
       opacity: 0.3;
+      color: var(--gold);
     }
 
     #empty h2 {
       font-size: 1.1rem;
       font-weight: 600;
-      color: var(--color-text);
+      color: var(--fg-muted);
     }
 
     #empty p {
       font-size: 0.9rem;
       max-width: 360px;
+      color: var(--fg-dim);
+    }
+
+    #empty strong {
+      color: var(--cream);
     }
 
     /* ── Insights container ── */
     #insights {
       display: flex;
       flex-direction: column;
-      gap: var(--sp-4);
+      gap: 16px;
     }
 
-    /* ── Card ── */
-    .card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
+    /* ── Zone heading (for screenshot context) ── */
+    #zone-heading {
+      font-family: var(--mono);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.02em;
+      padding: 4px 0 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+
+    /* ── Panel (wraps each insight element) ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      padding: var(--sp-4);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.45);
+      overflow: hidden;
+      transition: border-color 200ms var(--ease);
     }
 
-    .card-title {
-      font-family: var(--font-mono);
+    .panel:hover {
+      border-color: var(--border-2);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 0;
+    }
+
+    .panel-title {
+      font-family: var(--mono);
       font-size: 0.72rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--color-text-muted);
-      margin-bottom: var(--sp-3);
+      color: var(--fg-dim);
+    }
+
+    .panel-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--cream);
+      cursor: pointer;
+      transition: color 150ms var(--ease), border-color 150ms var(--ease), background 150ms var(--ease);
+      flex-shrink: 0;
+      padding: 0;
+    }
+
+    .tool-btn:hover {
+      color: var(--gold);
+      border-color: var(--border-2);
+      background: var(--surface-3);
+    }
+
+    .tool-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .panel-body {
+      padding: 12px 16px 16px;
     }
 
     /* ── KPI cards ── */
+    #kpis-wrap {
+      /* panel wrapping kpis grid */
+    }
+
     #kpis {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: var(--sp-3);
+      gap: 12px;
     }
 
     .kpi-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      padding: var(--sp-4);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      border-top: 3px solid var(--gold-deep);
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: var(--sp-1);
+      gap: 4px;
+      transition: border-color 150ms var(--ease);
+    }
+
+    .kpi-card:hover {
+      border-color: var(--border-2);
+      border-top-color: var(--gold);
     }
 
     .kpi-label {
@@ -375,20 +501,20 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: var(--color-text-muted);
+      color: var(--fg-muted);
     }
 
     .kpi-value {
-      font-family: var(--font-mono);
+      font-family: var(--mono);
       font-size: 1.8rem;
       font-weight: 700;
-      color: var(--color-primary);
+      color: var(--gold);
       line-height: 1.1;
     }
 
     .kpi-sub {
       font-size: 0.78rem;
-      color: var(--color-text-muted);
+      color: var(--fg-muted);
       font-weight: 400;
       margin-top: 2px;
     }
@@ -397,15 +523,7 @@
     .chart-row {
       display: grid;
       grid-template-columns: 1fr 2fr;
-      gap: var(--sp-4);
-    }
-
-    .chart-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      padding: var(--sp-4);
+      gap: 16px;
     }
 
     .chart-container {
@@ -422,22 +540,20 @@
     }
 
     /* ── Narrative ── */
-    #narrative-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      padding: var(--sp-4);
-    }
-
     #narrative {
       font-size: 0.88rem;
       line-height: 1.6;
-      color: var(--color-text);
+      color: var(--cream);
     }
 
     .narrative-line {
       display: block;
+    }
+
+    .narrative-line.domain-line {
+      color: var(--gold-deep);
+      font-weight: 600;
+      margin-top: 4px;
     }
 
     .narrative-blank {
@@ -446,15 +562,6 @@
     }
 
     /* ── Table ── */
-    #table-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      padding: var(--sp-4);
-      overflow: hidden;
-    }
-
     .table-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -467,22 +574,28 @@
       font-variant-numeric: tabular-nums;
     }
 
+    #table thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
     #table th {
-      background: var(--color-muted);
-      color: var(--color-text);
-      font-family: var(--font-mono);
+      background: var(--surface-2);
+      color: var(--cream);
+      font-family: var(--mono);
       font-size: 0.72rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: var(--sp-2) var(--sp-3);
+      padding: 8px 12px;
       text-align: right;
       white-space: nowrap;
-      border-bottom: 2px solid var(--color-border);
+      border-bottom: 2px solid var(--border);
       cursor: pointer;
       user-select: none;
       position: relative;
-      transition: background 150ms;
+      transition: background 150ms var(--ease);
     }
 
     #table th:first-child {
@@ -490,11 +603,11 @@
     }
 
     #table th:hover {
-      background: var(--color-border);
+      background: var(--surface-3);
     }
 
     #table th.sort-active {
-      color: var(--color-primary);
+      color: var(--gold);
     }
 
     .sort-indicator {
@@ -506,20 +619,21 @@
 
     #table th.sort-active .sort-indicator {
       opacity: 1;
+      color: var(--gold);
     }
 
     #table td {
-      padding: var(--sp-2) var(--sp-3);
+      padding: 8px 12px;
       text-align: right;
-      border-bottom: 1px solid var(--color-border);
-      color: var(--color-text);
+      border-bottom: 1px solid var(--border);
+      color: var(--fg-muted);
       white-space: nowrap;
     }
 
     #table td:first-child {
       text-align: left;
       font-weight: 500;
-      color: var(--color-foreground);
+      color: var(--cream);
       max-width: 260px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -529,25 +643,68 @@
       border-bottom: none;
     }
 
+    #table tbody tr:nth-child(even) td {
+      background: rgba(255,255,255,0.02);
+    }
+
     #table tbody tr:hover td {
-      background: var(--color-muted);
+      background: rgba(232,200,16,0.06);
     }
 
     #table td.total-col {
-      font-family: var(--font-mono);
+      font-family: var(--mono);
       font-weight: 700;
-      color: var(--color-primary);
+      color: var(--gold);
     }
 
     #table th.total-col {
-      color: var(--color-primary);
+      color: var(--gold);
+    }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--surface-2);
+      border: 1px solid var(--gold-deep);
+      border-radius: 10px;
+      color: var(--cream);
+      font-size: 0.82rem;
+      padding: 10px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      animation: toast-in 200ms var(--ease) both;
+      pointer-events: none;
+      max-width: 280px;
+    }
+
+    .toast.toast-out {
+      animation: toast-out 200ms var(--ease) both;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(8px); }
     }
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
       #header {
-        padding: var(--sp-2) var(--sp-3);
-        gap: var(--sp-2);
+        padding: 8px 12px;
+        gap: 8px;
       }
 
       #app-title {
@@ -560,8 +717,8 @@
       }
 
       #main {
-        padding: var(--sp-3);
-        gap: var(--sp-3);
+        padding: 12px;
+        gap: 12px;
       }
 
       .chart-row {
@@ -579,7 +736,7 @@
       }
 
       .input-group {
-        flex: 1 1 calc(50% - var(--sp-2));
+        flex: 1 1 calc(50% - 8px);
       }
     }
 
@@ -588,6 +745,17 @@
         grid-template-columns: 1fr 2.2fr;
       }
     }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* ── Table panel: allow sticky thead (overflow:hidden disables sticky) ── */
+    #table-panel { overflow: visible; }
 
     /* ── Utility ── */
     .hidden { display: none !important; }
@@ -631,14 +799,27 @@
   <span id="status" role="status" aria-live="polite" aria-atomic="true">Idle</span>
 </header>
 
+<!-- ── Toast container ── -->
+<div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
 <!-- ── Main ── -->
 <main id="main">
 
-  <!-- Zone filter -->
-  <div id="zones" role="tablist" aria-label="Zone filter"></div>
+  <!-- Zone filter + screenshot button -->
+  <div id="zones-panel">
+    <div id="zones" role="tablist" aria-label="Zone filter"></div>
+    <button id="screenshotBtn" type="button" title="Download zone image" aria-label="Download zone image">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download zone image
+    </button>
+  </div>
 
   <!-- Empty state -->
-  <div id="empty" role="status">
+  <div id="empty">
     <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
     </svg>
@@ -649,39 +830,143 @@
   <!-- Insights (hidden until data loaded) -->
   <div id="insights" class="hidden">
 
-    <!-- KPI cards -->
-    <div id="kpis" aria-label="Key metrics"></div>
+    <!-- Zone heading (visible in screenshots) -->
+    <div id="zone-heading"></div>
 
-    <!-- Charts -->
+    <!-- Panel 1: KPI cards -->
+    <div class="panel" id="kpis-wrap">
+      <div class="panel-header">
+        <div class="panel-title">Key Metrics</div>
+        <div class="panel-toolbar">
+          <button class="tool-btn" id="kpisCopyBtn" type="button" aria-label="Copy KPI summary" title="Copy KPI summary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="kpisDownloadBtn" type="button" aria-label="Download KPI panel as PNG" title="Download KPI panel as PNG">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="kpis" aria-label="Key metrics"></div>
+      </div>
+    </div>
+
+    <!-- Panel 2+3: Charts side by side -->
     <div class="chart-row">
-      <div class="chart-card">
-        <div class="card-title">Risks by Domain</div>
-        <div id="pie-container" class="chart-container">
-          <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+      <!-- Panel 2: Pie chart -->
+      <div class="panel" id="pie-panel">
+        <div class="panel-header">
+          <div class="panel-title">Risks by Domain</div>
+          <div class="panel-toolbar">
+            <button class="tool-btn" id="pieCopyBtn" type="button" aria-label="Copy pie chart as image" title="Copy pie chart as image">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="pieDownloadBtn" type="button" aria-label="Download pie chart as PNG" title="Download pie chart as PNG">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="pie-container" class="chart-container">
+            <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+          </div>
         </div>
       </div>
-      <div class="chart-card">
-        <div class="card-title">Domain x Category Breakdown</div>
-        <div id="bar-container" class="chart-container">
-          <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+
+      <!-- Panel 3: Stacked bar chart -->
+      <div class="panel" id="bar-panel">
+        <div class="panel-header">
+          <div class="panel-title">Domain x Category Breakdown</div>
+          <div class="panel-toolbar">
+            <button class="tool-btn" id="barCopyBtn" type="button" aria-label="Copy bar chart as image" title="Copy bar chart as image">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="barDownloadBtn" type="button" aria-label="Download bar chart as PNG" title="Download bar chart as PNG">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="bar-container" class="chart-container">
+            <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Narrative -->
-    <div id="narrative-card" class="card">
-      <div class="card-title">Narrative Summary</div>
-      <div id="narrative" aria-label="Narrative summary"></div>
+    <!-- Panel 4: Narrative -->
+    <div class="panel" id="narrative-panel">
+      <div class="panel-header">
+        <div class="panel-title">Narrative Summary</div>
+        <div class="panel-toolbar">
+          <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="narrative" aria-label="Narrative summary"></div>
+      </div>
     </div>
 
-    <!-- Crosstab table -->
-    <div id="table-card">
-      <div class="card-title">Crosstab: Domain by Category</div>
-      <div class="table-scroll">
-        <table id="table" aria-label="Risk counts by domain and category">
-          <thead></thead>
-          <tbody></tbody>
-        </table>
+    <!-- Panel 5: Crosstab table -->
+    <div class="panel" id="table-panel">
+      <div class="panel-header">
+        <div class="panel-title">Crosstab: Domain by Category</div>
+        <div class="panel-toolbar">
+          <button class="tool-btn" id="tableCopyBtn" type="button" aria-label="Copy crosstab as TSV" title="Copy crosstab as TSV (paste into Excel)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="tableDownloadBtn" type="button" aria-label="Download crosstab as CSV" title="Download crosstab as CSV">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="table-scroll">
+          <table id="table" aria-label="Risk counts by domain and category">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -694,78 +979,189 @@
   'use strict';
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let payload = null;
-  let currentZone = 'Overall';
-  let pieChart = null;
-  let barChart = null;
-  let sortCol = null;       // column index or null
-  let sortAsc = true;
+  var payload = null;
+  var currentZone = 'Overall';
+  var pieChart = null;
+  var barChart = null;
+  var sortCol = null;
+  var sortAsc = true;
 
-  const ZONE_ORDER = ['GHQ', 'AFR', 'SAZ', 'MAZ', 'NAZ', 'APAC', 'EUR', 'BEES', 'BEES-FT', 'Overall'];
+  var ZONE_ORDER = ['GHQ', 'AFR', 'SAZ', 'MAZ', 'NAZ', 'APAC', 'EUR', 'BEES', 'BEES-FT', 'Overall'];
 
-  // ── Chart palette ──────────────────────────────────────────────────────────
-  // Accessible: blues + amber/orange + slate; not red/green only
-  const CAT_COLORS = {
-    'COMMERCIAL': '#1E40AF',  // indigo-800
-    'LOGISTICS':  '#3B82F6',  // blue-500
-    'NCI':        '#06B6D4',  // cyan-500
-    'PACKAGING':  '#8B5CF6',  // violet-500
-    'TECHNOLOGY': '#D97706',  // amber-600
-    'RAU':        '#64748B',  // slate-500
-    'Fees':       '#0EA5E9',  // sky-500
+  // ── Chart palette (gold/amber tones suitable for dark bg) ──────────────────
+  var CAT_COLORS = {
+    'COMMERCIAL': '#e8c810',
+    'LOGISTICS':  '#c99a1e',
+    'NCI':        '#f5da3a',
+    'PACKAGING':  '#a89572',
+    'TECHNOLOGY': '#cdbf9f',
+    'RAU':        '#897c64',
+    'Fees':       '#40351f',
   };
 
-  const PIE_PALETTE = [
-    '#1E40AF','#3B82F6','#06B6D4','#8B5CF6','#D97706',
-    '#64748B','#0EA5E9','#6366F1','#F59E0B','#475569',
-    '#2563EB','#7C3AED','#0891B2','#9333EA','#1D4ED8',
+  var PIE_PALETTE = [
+    '#e8c810','#c99a1e','#f5da3a','#a89572','#cdbf9f',
+    '#897c64','#5a4e3a','#40351f','#d4a820','#b8922a',
+    '#f0d060','#9a8060','#7a6040','#e0b830','#c0a020',
   ];
 
   // ── Elements ───────────────────────────────────────────────────────────────
-  const $  = id => document.getElementById(id);
-  const elStatus    = $('status');
-  const elZones     = $('zones');
-  const elEmpty     = $('empty');
-  const elInsights  = $('insights');
-  const elKpis      = $('kpis');
-  const elNarrative = $('narrative');
-  const elTable     = $('table');
-  const elFetchBtn  = $('fetchBtn');
-  const elFetchIcon = $('fetchIcon');
+  var $ = function(id) { return document.getElementById(id); };
+  var elStatus    = $('status');
+  var elZones     = $('zones');
+  var elEmpty     = $('empty');
+  var elInsights  = $('insights');
+  var elKpis      = $('kpis');
+  var elNarrative = $('narrative');
+  var elTable     = $('table');
+  var elFetchBtn  = $('fetchBtn');
+
+  // ── Toast helper ───────────────────────────────────────────────────────────
+  function toast(msg) {
+    var container = $('toast-container');
+    if (!container) return;
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() {
+      el.classList.add('toast-out');
+      setTimeout(function() {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 250);
+    }, 2000);
+  }
+
+  // ── Download helpers ───────────────────────────────────────────────────────
+  function downloadBlob(filename, blob) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      URL.revokeObjectURL(url);
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 500);
+    toast('Downloaded ' + filename);
+  }
+
+  function downloadDataURL(filename, dataURL) {
+    var a = document.createElement('a');
+    a.href = dataURL;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 500);
+    toast('Downloaded ' + filename);
+  }
+
+  // ── Copy helpers ───────────────────────────────────────────────────────────
+  function copyText(str) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(str).then(function() {
+        toast('Copied');
+      }).catch(function() {
+        toast('Copy failed');
+      });
+    } else {
+      toast('Copy failed');
+    }
+  }
+
+  // chartToOpaqueDataURL: composites chartCanvas onto an opaque surface background
+  function chartToOpaqueDataURL(chartCanvas) {
+    var w = chartCanvas.width;
+    var h = chartCanvas.height;
+    var tmp = document.createElement('canvas');
+    tmp.width = w;
+    tmp.height = h;
+    var ctx = tmp.getContext('2d');
+    ctx.fillStyle = '#14100a';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(chartCanvas, 0, 0);
+    return tmp.toDataURL('image/png');
+  }
+
+  function copyCanvasImage(chartCanvas, csvFallbackFn) {
+    if (!chartCanvas) { toast('Copy failed'); return; }
+    var dataURL = chartToOpaqueDataURL(chartCanvas);
+    if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+      try {
+        var parts = dataURL.split(',');
+        var byteStr = atob(parts[1]);
+        var arr = new Uint8Array(byteStr.length);
+        for (var i = 0; i < byteStr.length; i++) { arr[i] = byteStr.charCodeAt(i); }
+        var blob = new Blob([arr], { type: 'image/png' });
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+          toast('Copied');
+        }).catch(function() {
+          // fallback to CSV
+          var csv = csvFallbackFn ? csvFallbackFn() : null;
+          if (csv) {
+            navigator.clipboard.writeText(csv).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
+          } else {
+            toast('Copy failed');
+          }
+        });
+      } catch(e) {
+        var csv2 = csvFallbackFn ? csvFallbackFn() : null;
+        if (csv2) {
+          navigator.clipboard.writeText(csv2).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
+        } else {
+          toast('Copy failed');
+        }
+      }
+    } else {
+      var csv3 = csvFallbackFn ? csvFallbackFn() : null;
+      if (csv3) {
+        navigator.clipboard.writeText(csv3).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
+      } else {
+        toast('Copy failed');
+      }
+    }
+  }
+
+  // ── No-data guard ──────────────────────────────────────────────────────────
+  function requireData() {
+    if (!payload) { toast('No data yet'); return false; }
+    return true;
+  }
+
+  // ── Zone code helper ───────────────────────────────────────────────────────
+  function zoneSlug() {
+    return currentZone.toLowerCase();
+  }
 
   // ── Status helpers ─────────────────────────────────────────────────────────
   function setStatus(text, cls) {
     elStatus.textContent = text;
     elStatus.className   = cls || '';
-    // I-1: Keep role static (role="status" aria-live="polite" set in HTML).
-    // Convey error state via CSS class only — do NOT mutate role at runtime.
-    // M-3: Set title so hover reveals full text when truncated.
     elStatus.title = text;
   }
 
   function showSpinner(show) {
-    // C-1: Always look up the element fresh by id — never use the stale
-    // elFetchIcon constant, which becomes invalid after outerHTML replacement.
     if (show) {
-      const icon = $('fetchIcon');
+      var icon = $('fetchIcon');
       if (icon) {
         icon.outerHTML = '<span id="fetchIcon" class="spinner" aria-hidden="true"></span>';
       }
     } else {
-      const sp = $('fetchIcon');
+      var sp = $('fetchIcon');
       if (sp) {
-        sp.outerHTML = `<svg id="fetchIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>`;
+        sp.outerHTML = '<svg id="fetchIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
       }
     }
   }
 
   function fmtGeneratedAt(iso) {
     try {
-      const d = new Date(iso);
+      var d = new Date(iso);
       return d.toLocaleString(undefined, {
         year: 'numeric', month: 'short', day: 'numeric',
         hour: '2-digit', minute: '2-digit'
@@ -778,15 +1174,15 @@
   // ── Zone filter ────────────────────────────────────────────────────────────
   function buildZoneFilter() {
     elZones.innerHTML = '';
-    ZONE_ORDER.forEach(code => {
-      const btn = document.createElement('button');
+    ZONE_ORDER.forEach(function(code) {
+      var btn = document.createElement('button');
       btn.type = 'button';
-      btn.setAttribute('role', 'tab'); // I-2: use setAttribute, not .role property
+      btn.setAttribute('role', 'tab');
       btn.className = 'zone-btn';
       btn.textContent = code;
       btn.dataset.zone = code;
       btn.setAttribute('aria-selected', code === currentZone ? 'true' : 'false');
-      btn.addEventListener('click', () => selectZone(code));
+      btn.addEventListener('click', function() { selectZone(code); });
       elZones.appendChild(btn);
     });
   }
@@ -795,8 +1191,8 @@
     currentZone = code;
     sortCol = null;
     sortAsc = true;
-    elZones.querySelectorAll('.zone-btn').forEach(btn => {
-      const sel = btn.dataset.zone === code;
+    elZones.querySelectorAll('.zone-btn').forEach(function(btn) {
+      var sel = btn.dataset.zone === code;
       btn.setAttribute('aria-selected', sel ? 'true' : 'false');
     });
     if (payload) render();
@@ -813,61 +1209,51 @@
     elInsights.classList.add('hidden');
   }
 
-  // ── Category helpers ──────────────────────────────────────────────────────
-  // Display-friendly label: "(blank)" → "Uncategorized"; everything else unchanged.
+  // ── Category helpers ───────────────────────────────────────────────────────
   function catLabel(c) {
     return c === '(blank)' ? 'Uncategorized' : c;
   }
 
-  // Union of cats: cat_order members present in z.by_cat (in order), then any
-  // remaining keys from z.by_cat NOT in cat_order (e.g. "(blank)"), in their
-  // natural iteration order. This guarantees every category gets a column/segment.
   function activeCatsFor(z) {
-    const byCat = z.by_cat || {};
-    const known = (payload.cat_order || []).filter(cat => cat in byCat);
-    const knownSet = new Set(known);
-    const extras = Object.keys(byCat).filter(cat => !knownSet.has(cat));
-    return [...known, ...extras];
+    var byCat = z.by_cat || {};
+    var known = (payload.cat_order || []).filter(function(cat) { return cat in byCat; });
+    var knownSet = new Set(known);
+    var extras = Object.keys(byCat).filter(function(cat) { return !knownSet.has(cat); });
+    return known.concat(extras);
   }
 
   // ── Render KPIs ───────────────────────────────────────────────────────────
   function renderKpis(z) {
     elKpis.innerHTML = '';
 
-    // 1) Total risks
-    const card1 = makeKpiCard(
+    var card1 = makeKpiCard(
       'Total Risks',
       z.total === 0 ? '0' : String(z.total),
       z.total === 0 ? 'No risks identified' : 'across all categories'
     );
     elKpis.appendChild(card1);
 
-    // 2) Top 2 domains combined share
     if (z.total > 0 && z.by_domain && z.by_domain.length >= 1) {
-      const top2 = z.by_domain.slice(0, 2);
-      const top2Names = top2.map(pair => pair[0]);
-      const top2Pct   = top2.reduce((s, pair) => s + (z.domain_pct[pair[0]] || 0), 0);
-      const subtitle   = top2Names.join(' + ');
-      const card2 = makeKpiCard(
-        'Top Domains Combined',
-        top2Pct + '%',
-        subtitle
-      );
+      var top2 = z.by_domain.slice(0, 2);
+      var top2Names = top2.map(function(pair) { return pair[0]; });
+      var top2Pct   = top2.reduce(function(s, pair) { return s + (z.domain_pct[pair[0]] || 0); }, 0);
+      var subtitle   = top2Names.join(' + ');
+      var card2 = makeKpiCard('Top Domains Combined', top2Pct + '%', subtitle);
       elKpis.appendChild(card2);
     } else {
       elKpis.appendChild(makeKpiCard('Top Domains', '—', 'No domain data'));
     }
 
-    // 3) Top supplier category (max of by_cat)
     if (z.total > 0 && z.by_cat && Object.keys(z.by_cat).length > 0) {
-      let topCat = null, topCount = -1;
-      for (const [cat, cnt] of Object.entries(z.by_cat)) {
+      var topCat = null, topCount = -1;
+      Object.entries(z.by_cat).forEach(function(entry) {
+        var cat = entry[0], cnt = entry[1];
         if (cnt > topCount) { topCount = cnt; topCat = cat; }
-      }
-      const card3 = makeKpiCard(
+      });
+      var card3 = makeKpiCard(
         'Top Category',
         topCat ? catLabel(topCat) : '—',
-        topCat ? `${topCount} risk${topCount !== 1 ? 's' : ''}` : 'No data'
+        topCat ? (topCount + ' risk' + (topCount !== 1 ? 's' : '')) : 'No data'
       );
       elKpis.appendChild(card3);
     } else {
@@ -876,15 +1262,15 @@
   }
 
   function makeKpiCard(label, value, sub) {
-    const card = document.createElement('div');
+    var card = document.createElement('div');
     card.className = 'kpi-card';
-    const l = document.createElement('div');
+    var l = document.createElement('div');
     l.className = 'kpi-label';
     l.textContent = label;
-    const v = document.createElement('div');
+    var v = document.createElement('div');
     v.className = 'kpi-value';
     v.textContent = value;
-    const s = document.createElement('div');
+    var s = document.createElement('div');
     s.className = 'kpi-sub';
     s.textContent = sub;
     card.appendChild(l);
@@ -893,23 +1279,40 @@
     return card;
   }
 
+  // ── KPI text summary for copy ──────────────────────────────────────────────
+  function kpiTextSummary(z) {
+    var lines = [];
+    lines.push('Total Risks: ' + z.total);
+    if (z.total > 0 && z.by_domain && z.by_domain.length >= 1) {
+      var top2 = z.by_domain.slice(0, 2);
+      var top2Names = top2.map(function(p) { return p[0]; });
+      var top2Pct = top2.reduce(function(s, p) { return s + (z.domain_pct[p[0]] || 0); }, 0);
+      lines.push('Top Domains Combined: ' + top2Pct + '% (' + top2Names.join(' + ') + ')');
+    }
+    if (z.total > 0 && z.by_cat && Object.keys(z.by_cat).length > 0) {
+      var topCat = null, topCount = -1;
+      Object.entries(z.by_cat).forEach(function(e) {
+        if (e[1] > topCount) { topCount = e[1]; topCat = e[0]; }
+      });
+      if (topCat) lines.push('Top Category: ' + catLabel(topCat) + ' (' + topCount + ' risks)');
+    }
+    return lines.join('\n');
+  }
+
   // ── Render Pie ─────────────────────────────────────────────────────────────
   function renderPie(z) {
     if (pieChart) { pieChart.destroy(); pieChart = null; }
-    const labels = (z.by_domain || []).map(p => p[0]);
-    const data   = (z.by_domain || []).map(p => p[1]);
-    const colors = labels.map((_, i) => PIE_PALETTE[i % PIE_PALETTE.length]);
-    // M-6: Chart.js cannot resolve CSS custom properties — read the computed
-    // value at render time so slice borders match the actual card surface.
-    const sliceBorder = getComputedStyle(document.documentElement)
-      .getPropertyValue('--color-surface').trim() || '#FFFFFF';
-    const ctx = $('pie').getContext('2d');
+    var labels = (z.by_domain || []).map(function(p) { return p[0]; });
+    var data   = (z.by_domain || []).map(function(p) { return p[1]; });
+    var colors = labels.map(function(_, i) { return PIE_PALETTE[i % PIE_PALETTE.length]; });
+    var sliceBorder = '#14100a';
+    var ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
       type: 'pie',
       data: {
-        labels,
+        labels: labels,
         datasets: [{
-          data,
+          data: data,
           backgroundColor: colors,
           borderColor: sliceBorder,
           borderWidth: 2,
@@ -925,16 +1328,16 @@
             labels: {
               padding: 8,
               boxWidth: 12,
-              font: { size: 10, family: "'Fira Sans', system-ui, sans-serif" },
-              color: getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#0F172A',
+              font: { size: 10, family: '"Fira Sans", system-ui, sans-serif' },
+              color: '#c4b79b',
             }
           },
           tooltip: {
             callbacks: {
-              label: ctx2 => {
-                const total2 = ctx2.dataset.data.reduce((a, b) => a + b, 0);
-                const pct = total2 ? Math.round(100 * ctx2.parsed / total2) : 0;
-                return ` ${ctx2.label}: ${ctx2.parsed} (${pct}%)`;
+              label: function(ctx2) {
+                var total2 = ctx2.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                var pct = total2 ? Math.round(100 * ctx2.parsed / total2) : 0;
+                return ' ' + ctx2.label + ': ' + ctx2.parsed + ' (' + pct + '%)';
               }
             }
           }
@@ -943,25 +1346,33 @@
     });
   }
 
+  // pie CSV fallback
+  function pieCsvData(z) {
+    var rows = ['domain,count'];
+    (z.by_domain || []).forEach(function(p) { rows.push(csvEscape(p[0]) + ',' + p[1]); });
+    return rows.join('\n');
+  }
+
   // ── Render Bar ─────────────────────────────────────────────────────────────
   function renderBar(z) {
     if (barChart) { barChart.destroy(); barChart = null; }
-    const domains = (z.by_domain || []).map(p => p[0]);
-    const activeCats = activeCatsFor(z);
-    const datasets = activeCats.map(cat => ({
-      label: catLabel(cat),
-      data: domains.map(dom => (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0),
-      backgroundColor: CAT_COLORS[cat] || '#94A3B8',
-      borderColor: 'transparent',
-      borderWidth: 0,
-    }));
-    const fgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#0F172A';
-    const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim() || '#475569';
-    const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--color-border').trim() || '#DBEAFE';
-    const ctx = $('bar').getContext('2d');
+    var domains = (z.by_domain || []).map(function(p) { return p[0]; });
+    var activeCats = activeCatsFor(z);
+    var datasets = activeCats.map(function(cat) {
+      return {
+        label: catLabel(cat),
+        data: domains.map(function(dom) {
+          return (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0;
+        }),
+        backgroundColor: CAT_COLORS[cat] || '#897c64',
+        borderColor: 'transparent',
+        borderWidth: 0,
+      };
+    });
+    var ctx = $('bar').getContext('2d');
     barChart = new Chart(ctx, {
       type: 'bar',
-      data: { labels: domains, datasets },
+      data: { labels: domains, datasets: datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -969,19 +1380,19 @@
           x: {
             stacked: true,
             ticks: {
-              color: mutedColor,
-              font: { size: 9, family: "'Fira Sans', system-ui, sans-serif" },
+              color: '#897c64',
+              font: { size: 9, family: '"Fira Sans", system-ui, sans-serif' },
               maxRotation: 45,
             },
-            grid: { color: borderColor },
+            grid: { color: 'rgba(232,200,16,0.08)' },
           },
           y: {
             stacked: true,
             ticks: {
-              color: mutedColor,
-              font: { size: 10, family: "'Fira Code', monospace" },
+              color: '#897c64',
+              font: { size: 10, family: '"Fira Code", monospace' },
             },
-            grid: { color: borderColor },
+            grid: { color: 'rgba(232,200,16,0.08)' },
           }
         },
         plugins: {
@@ -990,16 +1401,16 @@
             labels: {
               padding: 8,
               boxWidth: 12,
-              font: { size: 10, family: "'Fira Sans', system-ui, sans-serif" },
-              color: fgColor,
+              font: { size: 10, family: '"Fira Sans", system-ui, sans-serif' },
+              color: '#c4b79b',
             }
           },
           tooltip: {
             mode: 'index',
             callbacks: {
-              footer: items => {
-                const sum = items.reduce((a, i) => a + i.parsed.y, 0);
-                return `Total: ${sum}`;
+              footer: function(items) {
+                var sum = items.reduce(function(a, i) { return a + i.parsed.y; }, 0);
+                return 'Total: ' + sum;
               }
             }
           }
@@ -1008,19 +1419,38 @@
     });
   }
 
+  // bar CSV fallback
+  function barCsvData(z) {
+    var activeCats = activeCatsFor(z);
+    var domains = (z.by_domain || []).map(function(p) { return p[0]; });
+    var header = ['domain'].concat(activeCats.map(catLabel)).map(csvEscape).join(',');
+    var rows = [header];
+    domains.forEach(function(dom) {
+      var cells = [csvEscape(dom)].concat(activeCats.map(function(cat) {
+        return String((z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
+      }));
+      rows.push(cells.join(','));
+    });
+    return rows.join('\n');
+  }
+
   // ── Render Narrative ───────────────────────────────────────────────────────
   function renderNarrative(z) {
     elNarrative.innerHTML = '';
-    const lines = z.narrative || [];
-    lines.forEach(line => {
+    var lines = z.narrative || [];
+    lines.forEach(function(line) {
       if (line === '' || line === null || line === undefined) {
-        const sp = document.createElement('span');
+        var sp = document.createElement('span');
         sp.className = 'narrative-blank';
         sp.setAttribute('aria-hidden', 'true');
         elNarrative.appendChild(sp);
       } else {
-        const sp = document.createElement('span');
+        var sp = document.createElement('span');
         sp.className = 'narrative-line';
+        // Highlight lines that look like domain headings (e.g. start with a domain name followed by colon)
+        if (/^[A-Z][^:]{0,40}:/.test(line)) {
+          sp.classList.add('domain-line');
+        }
         sp.textContent = line;
         elNarrative.appendChild(sp);
       }
@@ -1029,38 +1459,36 @@
 
   // ── Render Table ───────────────────────────────────────────────────────────
   function renderTable(z) {
-    const thead = elTable.tHead;
-    const tbody = elTable.tBodies[0];
+    var thead = elTable.tHead;
+    var tbody = elTable.tBodies[0];
     thead.innerHTML = '';
     tbody.innerHTML = '';
 
-    const activeCats = activeCatsFor(z);
-    // Columns: domain, ...cats, total
-    // Display labels: catLabel() converts "(blank)" → "Uncategorized" for headers
-    const cols = ['Domain', ...activeCats, 'Total'];
-    const colLabels = ['Domain', ...activeCats.map(catLabel), 'Total'];
+    var activeCats = activeCatsFor(z);
+    var cols = ['Domain'].concat(activeCats).concat(['Total']);
+    var colLabels = ['Domain'].concat(activeCats.map(catLabel)).concat(['Total']);
 
-    // Build header
-    const tr = document.createElement('tr');
-    cols.forEach((col, i) => {
-      const th = document.createElement('th');
+    var tr = document.createElement('tr');
+    cols.forEach(function(col, i) {
+      var th = document.createElement('th');
       th.textContent = colLabels[i];
       if (col === 'Total') th.classList.add('total-col');
-      // Sort indicator
-      const ind = document.createElement('span');
+      var ind = document.createElement('span');
       ind.className = 'sort-indicator';
       ind.setAttribute('aria-hidden', 'true');
-      ind.textContent = ' ↕'; // up-down arrow
+      ind.textContent = ' ↕';
       th.appendChild(ind);
       th.setAttribute('aria-sort', 'none');
       th.tabIndex = 0;
-      th.addEventListener('click', () => tableSort(i, z, activeCats));
-      th.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          tableSort(i, z, activeCats);
-        }
-      });
+      (function(colIdx) {
+        th.addEventListener('click', function() { tableSort(colIdx, z, activeCats); });
+        th.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            tableSort(colIdx, z, activeCats);
+          }
+        });
+      })(i);
       if (sortCol === i) {
         th.classList.add('sort-active');
         ind.textContent = sortAsc ? ' ↑' : ' ↓';
@@ -1070,17 +1498,18 @@
     });
     thead.appendChild(tr);
 
-    // Build rows from by_domain order
-    let rows = (z.by_domain || []).map(([dom, domCount]) => {
-      const cells = [dom, ...activeCats.map(cat => (z.crosstab[dom] && z.crosstab[dom][cat]) || 0), domCount];
+    var rows = (z.by_domain || []).map(function(entry) {
+      var dom = entry[0], domCount = entry[1];
+      var cells = [dom].concat(activeCats.map(function(cat) {
+        return (z.crosstab[dom] && z.crosstab[dom][cat]) || 0;
+      })).concat([domCount]);
       return cells;
     });
 
-    // Sort if needed
     if (sortCol !== null) {
-      rows.sort((a, b) => {
-        const av = a[sortCol], bv = b[sortCol];
-        let cmp;
+      rows.sort(function(a, b) {
+        var av = a[sortCol], bv = b[sortCol];
+        var cmp;
         if (typeof av === 'number' && typeof bv === 'number') {
           cmp = av - bv;
         } else {
@@ -1090,11 +1519,10 @@
       });
     }
 
-    // Render rows
-    rows.forEach(cells => {
-      const row = document.createElement('tr');
-      cells.forEach((val, i) => {
-        const td = document.createElement('td');
+    rows.forEach(function(cells) {
+      var row = document.createElement('tr');
+      cells.forEach(function(val, i) {
+        var td = document.createElement('td');
         td.textContent = val;
         if (i === cells.length - 1) td.classList.add('total-col');
         row.appendChild(td);
@@ -1108,18 +1536,64 @@
       sortAsc = !sortAsc;
     } else {
       sortCol = colIdx;
-      sortAsc = colIdx === 0; // domain col: asc by default; numeric: desc
+      sortAsc = colIdx === 0;
       if (colIdx > 0) sortAsc = false;
     }
     renderTable(z);
   }
 
+  // ── CSV/TSV helpers ────────────────────────────────────────────────────────
+  function csvEscape(val) {
+    var s = String(val === null || val === undefined ? '' : val);
+    if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  function tableTsv(z) {
+    var activeCats = activeCatsFor(z);
+    var header = ['Domain'].concat(activeCats.map(catLabel)).concat(['Total']).join('\t');
+    var rows = [header];
+    (z.by_domain || []).forEach(function(entry) {
+      var dom = entry[0], domCount = entry[1];
+      var cells = [dom].concat(activeCats.map(function(cat) {
+        return String((z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
+      })).concat([String(domCount)]);
+      rows.push(cells.join('\t'));
+    });
+    return rows.join('\n');
+  }
+
+  function tableCsv(z) {
+    var activeCats = activeCatsFor(z);
+    var header = ['Domain'].concat(activeCats.map(catLabel)).concat(['Total']).map(csvEscape).join(',');
+    var rows = [header];
+    (z.by_domain || []).forEach(function(entry) {
+      var dom = entry[0], domCount = entry[1];
+      var cells = [csvEscape(dom)].concat(activeCats.map(function(cat) {
+        return String((z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
+      })).concat([String(domCount)]);
+      rows.push(cells.join(','));
+    });
+    return rows.join('\n');
+  }
+
+  function narrativeText(z) {
+    return (z.narrative || []).join('\n');
+  }
+
   // ── Main render ───────────────────────────────────────────────────────────
   function render() {
     if (!payload) return;
-    const z = payload.zones[currentZone];
+    var z = payload.zones[currentZone];
     if (!z) return;
     showData();
+    // Update zone heading
+    var heading = $('zone-heading');
+    if (heading) {
+      heading.textContent = currentZone + ' — Risk Insights';
+    }
     renderKpis(z);
     renderPie(z);
     renderBar(z);
@@ -1133,77 +1607,171 @@
     currentZone = 'Overall';
     sortCol = null;
     sortAsc = true;
-    // Update zone filter selection
-    elZones.querySelectorAll('.zone-btn').forEach(btn => {
+    elZones.querySelectorAll('.zone-btn').forEach(function(btn) {
       btn.setAttribute('aria-selected', btn.dataset.zone === 'Overall' ? 'true' : 'false');
     });
     render();
-    const n    = p.zones && p.zones[currentZone] ? p.zones[currentZone].total : '?';
-    const when = fmtGeneratedAt(p.generated_at);
-    const src  = source || p.source || '';
-    setStatus(`Loaded ${n} risks · ${when} · ${src}`, 'loaded');
+    var n    = p.zones && p.zones[currentZone] ? p.zones[currentZone].total : '?';
+    var when = fmtGeneratedAt(p.generated_at);
+    var src  = source || p.source || '';
+    setStatus('Loaded ' + n + ' risks · ' + when + ' · ' + src, 'loaded');
   }
 
-  // View is fixed to the single supported view.
-  const VIEW = 'TPRM Global View';
+  var VIEW = 'TPRM Global View';
 
   // ── Load cached data ───────────────────────────────────────────────────────
-  async function loadCached() {
-    try {
-      const r = await fetch('/api/data');
-      const j = await r.json();
+  function loadCached() {
+    fetch('/api/data').then(function(r) {
+      return r.json();
+    }).then(function(j) {
       if (j.empty) {
         showEmpty();
         setStatus('Idle — enter credentials and click Fetch', '');
       } else {
-        // I-3: Always pass literal 'cache' — j.source may be 'api' for a
-        // cached payload, which would mislabel the source in the status bar.
         applyPayload(j, 'cache');
       }
-    } catch (e) {
+    }).catch(function() {
       showEmpty();
       setStatus('Idle', '');
-    }
+    });
   }
 
   // ── Fetch button ───────────────────────────────────────────────────────────
-  async function doFetch() {
-    const hostname     = $('hostname').value.trim();
-    const client_id    = $('clientId').value.trim();
-    const client_secret = $('clientSecret').value;
-    const view         = VIEW;
+  function doFetch() {
+    var hostname      = $('hostname').value.trim();
+    var client_id     = $('clientId').value.trim();
+    var client_secret = $('clientSecret').value;
+    var view          = VIEW;
 
     elFetchBtn.disabled = true;
     showSpinner(true);
     setStatus('Fetching…', 'fetching');
 
-    try {
-      const r = await fetch('/api/fetch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hostname, client_id, client_secret, view }),
+    fetch('/api/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hostname: hostname, client_id: client_id, client_secret: client_secret, view: view }),
+    }).then(function(r) {
+      var status = r.status;
+      var ok = r.ok;
+      return r.text().then(function(text) {
+        var j;
+        try { j = JSON.parse(text); } catch(_) { j = null; }
+        if (!ok || (j && j.error)) {
+          var msg = (j && j.error) || ('HTTP ' + status);
+          setStatus('Error: ' + msg, 'error');
+          return;
+        }
+        applyPayload(j, (j && j.source) || 'api');
       });
-
-      // M-1: Guard JSON parse — a non-JSON error body (e.g. proxy 502) must not
-      // throw a confusing SyntaxError; fall back to a plain HTTP-status message.
-      const text = await r.text();
-      let j;
-      try { j = JSON.parse(text); } catch (_) { j = null; }
-
-      if (!r.ok || (j && j.error)) {
-        const msg = (j && j.error) || `HTTP ${r.status}`;
-        setStatus(`Error: ${msg}`, 'error');
-        return;
-      }
-
-      applyPayload(j, (j && j.source) || 'api');
-
-    } catch (e) {
-      setStatus(`Error: ${e.message || 'Network error'}`, 'error');
-    } finally {
+    }).catch(function(e) {
+      setStatus('Error: ' + (e.message || 'Network error'), 'error');
+    }).finally(function() {
       elFetchBtn.disabled = false;
       showSpinner(false);
-    }
+    });
+  }
+
+  // ── Export button handlers ─────────────────────────────────────────────────
+  function setupExportHandlers() {
+    // KPIs: copy text, download PNG
+    $('kpisCopyBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      copyText(kpiTextSummary(z));
+    });
+
+    $('kpisDownloadBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
+      var el = $('kpis-wrap');
+      var filename = zoneSlug() + '-kpis.png';
+      html2canvas(el, { backgroundColor: '#14100a', scale: 2, useCORS: true }).then(function(canvas) {
+        downloadDataURL(filename, canvas.toDataURL('image/png'));
+      }).catch(function() { toast('Screenshot failed'); });
+    });
+
+    // Pie: copy image (CSV fallback), download PNG
+    $('pieCopyBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      var canvas = $('pie');
+      copyCanvasImage(canvas, function() { return pieCsvData(z); });
+    });
+
+    $('pieDownloadBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var canvas = $('pie');
+      if (!canvas) { toast('No chart available'); return; }
+      var filename = zoneSlug() + '-domain-pie.png';
+      downloadDataURL(filename, chartToOpaqueDataURL(canvas));
+    });
+
+    // Bar: copy image (CSV fallback), download PNG
+    $('barCopyBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      var canvas = $('bar');
+      copyCanvasImage(canvas, function() { return barCsvData(z); });
+    });
+
+    $('barDownloadBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var canvas = $('bar');
+      if (!canvas) { toast('No chart available'); return; }
+      var filename = zoneSlug() + '-domain-bar.png';
+      downloadDataURL(filename, chartToOpaqueDataURL(canvas));
+    });
+
+    // Narrative: copy text, download txt
+    $('narrativeCopyBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      copyText(narrativeText(z));
+    });
+
+    $('narrativeDownloadBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      var text = narrativeText(z);
+      var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      downloadBlob(zoneSlug() + '-narrative.txt', blob);
+    });
+
+    // Table: copy TSV, download CSV
+    $('tableCopyBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      copyText(tableTsv(z));
+    });
+
+    $('tableDownloadBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      var z = payload.zones[currentZone];
+      var csv = tableCsv(z);
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      downloadBlob(zoneSlug() + '-crosstab.csv', blob);
+    });
+
+    // Zone screenshot
+    $('screenshotBtn').addEventListener('click', function() {
+      if (!requireData()) return;
+      if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
+      var btn = $('screenshotBtn');
+      var origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.textContent = 'Rendering…';
+      var el = $('insights');
+      var filename = zoneSlug() + '-dashboard.png';
+      html2canvas(el, { backgroundColor: '#0a0806', scale: 2, useCORS: true }).then(function(canvas) {
+        downloadDataURL(filename, canvas.toDataURL('image/png'));
+      }).catch(function() {
+        toast('Screenshot failed');
+      }).finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      });
+    });
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
@@ -1213,6 +1781,8 @@
     setStatus('Idle', '');
 
     elFetchBtn.addEventListener('click', doFetch);
+
+    setupExportHandlers();
 
     loadCached();
   }
