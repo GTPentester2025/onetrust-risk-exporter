@@ -1,5 +1,8 @@
 import datetime
+import subprocess
+import pytest
 from dashboard import build_payload
+import dashboard
 
 def _rows():
     rows = []
@@ -35,3 +38,26 @@ def test_zero_row_zone_is_present():
     naz = p["zones"]["NAZ"]
     assert naz["total"] == 0
     assert naz["narrative"] == ["A total of 0 risks identified across business units"]
+
+def test_export_cmd_has_creds_and_all_columns():
+    cmd = dashboard.export_cmd("My View", "app-de.onetrust.com", "cid", "sec",
+                               "raw_export.csv", py="PY")
+    assert cmd[0] == "PY"
+    assert "--view" in cmd and "My View" in cmd
+    assert "--all-columns" in cmd
+    assert "--client-secret" in cmd and "sec" in cmd
+    assert cmd[cmd.index("--out") + 1] == "raw_export.csv"
+
+def test_run_fetch_missing_view_raises():
+    with pytest.raises(ValueError):
+        dashboard.run_fetch({"hostname": "h", "client_id": "c",
+                             "client_secret": "s"})
+
+def test_run_fetch_reports_step_failure():
+    def fake_runner(cmd, **kw):
+        return subprocess.CompletedProcess(cmd, 1, "", "403 Forbidden")
+    with pytest.raises(RuntimeError) as e:
+        dashboard.run_fetch({"view": "V", "hostname": "h",
+                             "client_id": "c", "client_secret": "s"},
+                            runner=fake_runner)
+    assert "403" in str(e.value)
