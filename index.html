@@ -10,31 +10,23 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
-    /* ── Design tokens (dark+gold, single theme) ── */
+    /* ── Design tokens (Power BI dark, single theme) ── */
     :root {
-      --bg:#0a0806;
-      --bg-2:#0f0c08;
-      --surface:#14100a;
-      --surface-2:#1a150d;
-      --surface-3:#221b10;
-      --border:#2e2617;
-      --border-2:#40351f;
-      --fg:#f6f2e8;
-      --fg-muted:#c4b79b;
-      --fg-dim:#897c64;
-      --gold:#e8c810;
-      --gold-2:#f5da3a;
-      --gold-deep:#c99a1e;
-      --cream:#cdbf9f;
-      --soon:#a89572;
-      --live:#34d399;
-      --ring:#e8c810;
-      --radius:14px;
-      --radius-lg:20px;
-      --maxw:1140px;
-      --ease:cubic-bezier(0.22,1,0.36,1);
-      --font:"Fira Sans","Segoe UI",system-ui,sans-serif;
-      --mono:"Fira Code",ui-monospace,Consolas,monospace;
+      --canvas: #1b1a19;
+      --tile: #252423;
+      --tile-2: #2f2e2d;
+      --fg: #f3f2f1;
+      --fg-muted: #c8c6c4;
+      --fg-dim: #979593;
+      --border: #3b3a39;
+      --gold: #e8c810;
+      --gold-deep: #c99a1e;
+      --live: #34d399;
+      --danger: #f0736a;
+      --radius: 8px;
+      --maxw: 1280px;
+      --font: "Fira Sans", "Segoe UI", system-ui, sans-serif;
+      --mono: "Fira Code", ui-monospace, Consolas, monospace;
     }
 
     /* ── Reset & base ── */
@@ -44,159 +36,250 @@
 
     body {
       font-family: var(--font);
-      background:
-        radial-gradient(900px 480px at 15% -8%, rgba(232,200,16,0.11), transparent 60%),
-        radial-gradient(760px 460px at 100% 0%, rgba(245,218,58,0.06), transparent 55%),
-        var(--bg);
+      background: var(--canvas);
       color: var(--fg);
       line-height: 1.5;
       min-height: 100vh;
-      position: relative;
     }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        linear-gradient(to right, rgba(232,200,16,0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(232,200,16,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      mask-image: radial-gradient(1200px 700px at 50% 0%, #000 30%, transparent 85%);
-      -webkit-mask-image: radial-gradient(1200px 700px at 50% 0%, #000 30%, transparent 85%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ensure content is above grid overlay */
-    #header, #main { position: relative; z-index: 1; }
 
     /* ── Focus visible ── */
     :focus-visible {
-      outline: 2px solid var(--ring);
+      outline: 2px solid var(--gold);
       outline-offset: 2px;
       border-radius: 4px;
     }
 
-    /* ── Header bar ── */
-    #header {
-      background: rgba(20,16,10,0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    /* ── App bar ── */
+    #appbar {
+      background: var(--tile);
       border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
+      padding: 0 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 0;
       position: sticky;
       top: 0;
       z-index: 100;
+      height: 48px;
     }
 
-    #app-title {
+    #product-mark {
       font-family: var(--mono);
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: var(--gold);
-      white-space: nowrap;
       letter-spacing: -0.02em;
-      margin-right: 8px;
+      white-space: nowrap;
+      padding-right: 16px;
+      border-right: 1px solid var(--border);
+      margin-right: 0;
       flex-shrink: 0;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      flex: 1;
-      min-width: 120px;
-    }
-
-    .input-group label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--fg-dim);
-    }
-
-    .input-group input {
-      height: 44px;
-      min-height: 44px;
-      padding: 0 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface-2);
-      color: var(--cream);
-      font-family: var(--font);
-      font-size: 0.85rem;
-      transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
-    }
-
-    .input-group input:hover {
-      border-color: var(--border-2);
-    }
-
-    .input-group input:focus {
-      border-color: var(--ring);
-      box-shadow: 0 0 0 2px var(--ring);
-      outline: none;
-    }
-
-    .input-group input[readonly] {
-      color: var(--fg-dim);
-      opacity: 0.7;
-      cursor: default;
-    }
-
-    #fetchBtn {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 0 22px;
-      height: 44px;
-      min-height: 44px;
-      min-width: 100px;
-      background: linear-gradient(180deg, var(--gold-2), var(--gold));
-      color: #0a0806;
+    }
+
+    /* ── Zone tab strip ── */
+    #zones {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+      height: 100%;
+      padding: 0 8px;
+    }
+
+    #zones::-webkit-scrollbar { display: none; }
+
+    .zone-tab {
+      height: 100%;
+      padding: 0 14px;
       border: none;
-      border-radius: 10px;
-      font-family: var(--font);
-      font-weight: 700;
-      font-size: 0.9rem;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: var(--fg-muted);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: filter 150ms var(--ease), transform 100ms, box-shadow 150ms var(--ease);
+      white-space: nowrap;
+      transition: color 150ms, border-color 150ms;
       flex-shrink: 0;
+    }
+
+    .zone-tab:hover {
+      color: var(--fg);
+    }
+
+    .zone-tab[aria-selected="true"] {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* ── Right cluster ── */
+    #appbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 12px;
+      flex-shrink: 0;
+    }
+
+    .bar-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--tile-2);
+      color: var(--fg-muted);
+      font-family: var(--font);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 150ms, border-color 150ms, background 150ms;
       white-space: nowrap;
     }
 
-    #fetchBtn:hover:not(:disabled) {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 16px rgba(232,200,16,0.35);
+    .bar-btn:hover {
+      color: var(--fg);
+      border-color: var(--fg-dim);
     }
 
-    #fetchBtn:active:not(:disabled) {
-      transform: translateY(1px);
-    }
-
-    #fetchBtn:focus-visible {
-      outline: 2px solid var(--ring);
-      outline-offset: 2px;
-    }
-
-    #fetchBtn:disabled {
-      opacity: 0.55;
+    .bar-btn:disabled {
+      opacity: 0.45;
       cursor: not-allowed;
+    }
+
+    #refreshBtn {
+      color: var(--gold-deep);
+      border-color: var(--gold-deep);
+    }
+
+    #refreshBtn:hover:not(:disabled) {
+      color: var(--gold);
+      border-color: var(--gold);
+      background: rgba(232,200,16,0.08);
+    }
+
+    /* ── Status chip ── */
+    #status {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      white-space: nowrap;
+      color: var(--fg-dim);
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 200ms, background 200ms;
+    }
+
+    #status.running {
+      color: var(--gold);
+    }
+
+    #status.done {
+      color: var(--live);
+    }
+
+    #status.done::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--live);
+      flex-shrink: 0;
+    }
+
+    #status.error {
+      color: var(--danger);
+      background: rgba(240,115,106,0.1);
+    }
+
+    /* ── Export dropdown ── */
+    .dropdown-wrap {
+      position: relative;
+    }
+
+    #exportMenu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 4px);
+      background: var(--tile);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      min-width: 180px;
+      z-index: 200;
+      overflow: hidden;
+    }
+
+    #exportMenu.open { display: block; }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      background: transparent;
+      color: var(--fg-muted);
+      font-family: var(--font);
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-align: left;
+      transition: background 100ms, color 100ms;
+    }
+
+    .menu-item:hover {
+      background: var(--tile-2);
+      color: var(--fg);
+    }
+
+    /* ── Settings icon btn ── */
+    #settingsBtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--tile-2);
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: color 150ms, border-color 150ms, background 150ms;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    #settingsBtn:hover {
+      color: var(--fg);
+      border-color: var(--fg-dim);
     }
 
     /* ── Spinner ── */
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(10,8,6,0.3);
-      border-top-color: #0a0806;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(232,200,16,0.3);
+      border-top-color: var(--gold);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       flex-shrink: 0;
@@ -206,273 +289,131 @@
       to { transform: rotate(360deg); }
     }
 
-    /* ── Status pill ── */
-    #status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
-      max-width: 420px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--fg-dim);
-      background: transparent;
-      transition: background 200ms var(--ease), color 200ms var(--ease);
-    }
-
-    #status.fetching {
-      color: var(--gold);
-    }
-
-    #status.loaded {
-      color: var(--live);
-    }
-
-    #status.loaded::before {
-      content: '';
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--live);
-      flex-shrink: 0;
-    }
-
-    #status.error {
-      color: #f0736a;
-      background: rgba(240,115,106,0.1);
-      border-radius: 999px;
-    }
-
-    /* ── Main layout ── */
-    #main {
-      max-width: var(--maxw);
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* ── Zone filter / tab strip ── */
-    #zones-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
+    /* ── Onboarding banner ── */
+    #banner {
+      background: rgba(232,200,16,0.07);
+      border: 1px solid rgba(232,200,16,0.3);
       border-radius: var(--radius);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.45);
       padding: 12px 16px;
       display: flex;
       align-items: center;
+      gap: 12px;
       flex-wrap: wrap;
-      gap: 8px;
-      transition: border-color 150ms var(--ease);
+      margin: 16px auto;
+      max-width: var(--maxw);
     }
 
-    #zones-panel:hover {
-      border-color: var(--border-2);
-    }
+    #banner.hidden { display: none !important; }
 
-    #zones {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+    #banner-text {
       flex: 1;
-    }
-
-    .zone-btn {
-      height: 44px;
-      min-height: 44px;
-      padding: 0 16px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: var(--surface-2);
+      font-size: 0.87rem;
       color: var(--fg-muted);
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 150ms var(--ease), color 150ms var(--ease), border-color 150ms var(--ease), box-shadow 150ms var(--ease);
-      min-width: 44px;
-      white-space: nowrap;
     }
 
-    .zone-btn:hover {
-      border-color: var(--border-2);
-      color: var(--fg);
-      background: var(--surface-3);
-    }
-
-    .zone-btn[aria-selected="true"] {
-      background: linear-gradient(180deg, var(--gold-2), var(--gold));
-      color: #0a0806;
-      border-color: transparent;
-      font-weight: 700;
-      box-shadow: 0 2px 10px rgba(232,200,16,0.3);
-    }
-
-    /* ── Screenshot button (secondary style) ── */
-    #screenshotBtn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0 16px;
-      height: 44px;
-      min-height: 44px;
-      background: var(--surface-2);
-      color: var(--gold);
-      border: 1px solid var(--gold-deep);
-      border-radius: 10px;
-      font-family: var(--font);
-      font-weight: 600;
-      font-size: 0.82rem;
-      cursor: pointer;
-      transition: background 150ms var(--ease), box-shadow 150ms var(--ease), opacity 150ms;
-      white-space: nowrap;
+    #banner-open {
       flex-shrink: 0;
-    }
-
-    #screenshotBtn:hover:not(:disabled) {
-      background: var(--surface-3);
-      box-shadow: 0 2px 10px rgba(232,200,16,0.2);
-    }
-
-    #screenshotBtn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* ── Empty state ── */
-    #empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 64px 24px;
-      text-align: center;
-      color: var(--fg-dim);
-      background: var(--surface);
-      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border: 1px solid var(--gold-deep);
       border-radius: var(--radius);
-    }
-
-    #empty .empty-icon {
-      opacity: 0.3;
+      background: transparent;
       color: var(--gold);
-    }
-
-    #empty h2 {
-      font-size: 1.1rem;
+      font-family: var(--font);
+      font-size: 0.82rem;
       font-weight: 600;
-      color: var(--fg-muted);
+      cursor: pointer;
+      transition: background 150ms;
     }
 
-    #empty p {
-      font-size: 0.9rem;
-      max-width: 360px;
+    #banner-open:hover { background: rgba(232,200,16,0.1); }
+
+    #banner-dismiss {
+      flex-shrink: 0;
+      border: none;
+      background: transparent;
       color: var(--fg-dim);
-    }
-
-    #empty strong {
-      color: var(--cream);
-    }
-
-    /* ── Insights container ── */
-    #insights {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* ── Zone heading (for screenshot context) ── */
-    #zone-heading {
-      font-family: var(--mono);
+      cursor: pointer;
+      padding: 4px;
       font-size: 1rem;
-      font-weight: 600;
-      color: var(--gold);
-      letter-spacing: 0.02em;
-      padding: 4px 0 8px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 4px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
     }
 
-    /* ── Panel (wraps each insight element) ── */
-    .panel {
-      background: var(--surface);
+    #banner-dismiss:hover { color: var(--fg); }
+
+    /* ── Main canvas ── */
+    #main {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 16px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── Tile ── */
+    .tile {
+      background: var(--tile);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.45);
+      box-shadow: 0 1px 2px rgba(0,0,0,.4);
       overflow: hidden;
-      transition: border-color 200ms var(--ease);
     }
 
-    .panel:hover {
-      border-color: var(--border-2);
-    }
-
-    .panel-header {
+    .tile-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px 0;
+      padding: 10px 14px 0;
     }
 
-    .panel-title {
+    .tile-title {
       font-family: var(--mono);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.09em;
       color: var(--fg-dim);
     }
 
-    .panel-toolbar {
+    .tile-toolbar {
       display: flex;
       align-items: center;
       gap: 4px;
+      opacity: 0;
+      transition: opacity 150ms;
+    }
+
+    .tile:hover .tile-toolbar {
+      opacity: 1;
     }
 
     .tool-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
+      width: 28px;
+      height: 28px;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface-2);
-      color: var(--cream);
+      border-radius: 6px;
+      background: var(--tile-2);
+      color: var(--fg-muted);
       cursor: pointer;
-      transition: color 150ms var(--ease), border-color 150ms var(--ease), background 150ms var(--ease);
-      flex-shrink: 0;
+      transition: color 150ms, border-color 150ms, background 150ms;
       padding: 0;
     }
 
     .tool-btn:hover {
       color: var(--gold);
-      border-color: var(--border-2);
-      background: var(--surface-3);
+      border-color: var(--fg-dim);
     }
 
-    .tool-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .tile-body {
+      padding: 12px 14px 14px;
     }
 
-    .panel-body {
-      padding: 12px 16px 16px;
-    }
-
-    /* ── KPI cards ── */
-    #kpis-wrap {
-      /* panel wrapping kpis grid */
-    }
-
+    /* ── KPI row ── */
     #kpis {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -480,24 +421,20 @@
     }
 
     .kpi-card {
-      background: var(--surface-2);
+      background: var(--tile-2);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       border-top: 3px solid var(--gold-deep);
-      padding: 16px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      transition: border-color 150ms var(--ease);
+      gap: 3px;
     }
 
-    .kpi-card:hover {
-      border-color: var(--border-2);
-      border-top-color: var(--gold);
-    }
+    .kpi-card:hover { border-top-color: var(--gold); }
 
     .kpi-label {
-      font-size: 0.7rem;
+      font-size: 0.69rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -506,24 +443,24 @@
 
     .kpi-value {
       font-family: var(--mono);
-      font-size: 1.8rem;
+      font-size: 1.75rem;
       font-weight: 700;
       color: var(--gold);
       line-height: 1.1;
     }
 
     .kpi-sub {
-      font-size: 0.78rem;
+      font-size: 0.77rem;
       color: var(--fg-muted);
       font-weight: 400;
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     /* ── Chart row ── */
     .chart-row {
       display: grid;
       grid-template-columns: 1fr 2fr;
-      gap: 16px;
+      gap: 14px;
     }
 
     .chart-container {
@@ -531,24 +468,17 @@
       width: 100%;
     }
 
-    #pie-container {
-      height: 280px;
-    }
-
-    #bar-container {
-      height: 280px;
-    }
+    #pie-container { height: 280px; }
+    #bar-container { height: 280px; }
 
     /* ── Narrative ── */
     #narrative {
-      font-size: 0.88rem;
-      line-height: 1.6;
-      color: var(--cream);
+      font-size: 0.87rem;
+      line-height: 1.65;
+      color: var(--fg-muted);
     }
 
-    .narrative-line {
-      display: block;
-    }
+    .narrative-line { display: block; }
 
     .narrative-line.domain-line {
       color: var(--gold-deep);
@@ -570,21 +500,17 @@
     #table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.82rem;
+      font-size: 0.81rem;
       font-variant-numeric: tabular-nums;
     }
 
-    #table thead {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-    }
+    #table thead { position: sticky; top: 0; z-index: 2; }
 
     #table th {
-      background: var(--surface-2);
-      color: var(--cream);
+      background: var(--tile-2);
+      color: var(--fg-muted);
       font-family: var(--mono);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -594,21 +520,12 @@
       border-bottom: 2px solid var(--border);
       cursor: pointer;
       user-select: none;
-      position: relative;
-      transition: background 150ms var(--ease);
+      transition: background 150ms;
     }
 
-    #table th:first-child {
-      text-align: left;
-    }
-
-    #table th:hover {
-      background: var(--surface-3);
-    }
-
-    #table th.sort-active {
-      color: var(--gold);
-    }
+    #table th:first-child { text-align: left; }
+    #table th:hover { background: var(--tile); }
+    #table th.sort-active { color: var(--gold); }
 
     .sort-indicator {
       display: inline-block;
@@ -623,7 +540,7 @@
     }
 
     #table td {
-      padding: 8px 12px;
+      padding: 7px 12px;
       text-align: right;
       border-bottom: 1px solid var(--border);
       color: var(--fg-muted);
@@ -633,39 +550,225 @@
     #table td:first-child {
       text-align: left;
       font-weight: 500;
-      color: var(--cream);
+      color: var(--fg);
       max-width: 260px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    #table tr:last-child td {
-      border-bottom: none;
+    #table tr:last-child td { border-bottom: none; }
+    #table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    #table tbody tr:hover td { background: rgba(232,200,16,0.06); }
+    #table td.total-col { font-family: var(--mono); font-weight: 700; color: var(--gold); }
+    #table th.total-col { color: var(--gold); }
+
+    /* ── Table+Narrative split row ── */
+    .data-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 14px;
     }
 
-    #table tbody tr:nth-child(even) td {
-      background: rgba(255,255,255,0.02);
-    }
+    /* ── Table panel: allow sticky thead ── */
+    #table-panel { overflow: visible; }
 
-    #table tbody tr:hover td {
-      background: rgba(232,200,16,0.06);
-    }
-
-    #table td.total-col {
+    /* ── Zone heading ── */
+    #zone-heading {
       font-family: var(--mono);
-      font-weight: 700;
+      font-size: 0.95rem;
+      font-weight: 600;
       color: var(--gold);
+      letter-spacing: 0.02em;
+      padding: 2px 0 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
     }
 
-    #table th.total-col {
-      color: var(--gold);
+    /* ── Empty state ── */
+    #empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 64px 24px;
+      text-align: center;
+      background: var(--tile);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
     }
+
+    #empty h2 { font-size: 1.05rem; font-weight: 600; color: var(--fg-muted); }
+    #empty p { font-size: 0.88rem; max-width: 360px; color: var(--fg-dim); }
+
+    /* ── Insights container ── */
+    #insights {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── Settings modal ── */
+    #settings-scrim {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #settings-scrim.open {
+      display: flex;
+    }
+
+    #settings {
+      background: var(--tile);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+      width: 440px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #settings-head h2 {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--fg);
+    }
+
+    #settingsClose {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--tile-2);
+      color: var(--fg-muted);
+      cursor: pointer;
+      padding: 0;
+      transition: color 150ms;
+    }
+
+    #settingsClose:hover { color: var(--fg); }
+
+    #settings-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-group label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--fg-dim);
+    }
+
+    .field-group input,
+    .field-group select {
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--tile-2);
+      color: var(--fg);
+      font-family: var(--font);
+      font-size: 0.85rem;
+      transition: border-color 150ms;
+    }
+
+    .field-group select option { background: var(--tile); }
+
+    .field-group input:hover, .field-group select:hover { border-color: var(--fg-dim); }
+
+    .field-group input:focus, .field-group select:focus {
+      outline: 2px solid var(--gold);
+      outline-offset: 0;
+      border-color: var(--gold);
+    }
+
+    .modal-section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--fg-dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 0;
+    }
+
+    #cfgTestResult {
+      font-size: 0.8rem;
+      min-height: 1.2em;
+      padding: 2px 0;
+    }
+
+    #cfgTestResult.ok { color: var(--live); }
+    #cfgTestResult.fail { color: var(--danger); }
+
+    #settings-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .modal-btn {
+      height: 34px;
+      padding: 0 16px;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 150ms, color 150ms;
+    }
+
+    #cfgTest {
+      border: 1px solid var(--border);
+      background: var(--tile-2);
+      color: var(--fg-muted);
+    }
+
+    #cfgTest:hover { color: var(--fg); border-color: var(--fg-dim); }
+
+    #cfgSave {
+      border: 1px solid var(--gold-deep);
+      background: var(--gold);
+      color: #1b1a19;
+    }
+
+    #cfgSave:hover { background: #f0d020; }
 
     /* ── Toast ── */
     #toast-container {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       z-index: 9999;
       display: flex;
       flex-direction: column;
@@ -674,76 +777,47 @@
     }
 
     .toast {
-      background: var(--surface-2);
+      background: var(--tile-2);
       border: 1px solid var(--gold-deep);
-      border-radius: 10px;
-      color: var(--cream);
-      font-size: 0.82rem;
-      padding: 10px 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      animation: toast-in 200ms var(--ease) both;
+      border-radius: var(--radius);
+      color: var(--fg-muted);
+      font-size: 0.81rem;
+      padding: 9px 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+      animation: toast-in 200ms ease both;
       pointer-events: none;
-      max-width: 280px;
+      max-width: 260px;
     }
 
-    .toast.toast-out {
-      animation: toast-out 200ms var(--ease) both;
-    }
+    .toast.toast-out { animation: toast-out 200ms ease both; }
 
     @keyframes toast-in {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes toast-out {
       from { opacity: 1; transform: translateY(0); }
-      to   { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 0; transform: translateY(6px); }
     }
+
+    /* ── Utility ── */
+    .hidden { display: none !important; }
 
     /* ── Responsive ── */
-    @media (max-width: 768px) {
-      #header {
-        padding: 8px 12px;
-        gap: 8px;
-      }
-
-      #app-title {
-        font-size: 0.9rem;
-        width: 100%;
-      }
-
-      .input-group {
-        min-width: 100px;
-      }
-
-      #main {
-        padding: 12px;
-        gap: 12px;
-      }
-
-      .chart-row {
-        grid-template-columns: 1fr;
-      }
-
-      #kpis {
-        grid-template-columns: 1fr 1fr;
-      }
+    @media (max-width: 900px) {
+      .chart-row { grid-template-columns: 1fr; }
+      .data-row  { grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 480px) {
-      #kpis {
-        grid-template-columns: 1fr;
-      }
-
-      .input-group {
-        flex: 1 1 calc(50% - 8px);
-      }
+    @media (max-width: 600px) {
+      #appbar { padding: 0 10px; }
+      #main { padding: 12px 12px 24px; }
+      #kpis { grid-template-columns: 1fr 1fr; }
     }
 
-    @media (min-width: 1024px) {
-      .chart-row {
-        grid-template-columns: 1fr 2.2fr;
-      }
+    @media (max-width: 360px) {
+      #kpis { grid-template-columns: 1fr; }
     }
 
     /* ── Reduced motion ── */
@@ -753,78 +827,106 @@
         transition: none !important;
       }
     }
-
-    /* ── Table panel: allow sticky thead (overflow:hidden disables sticky) ── */
-    #table-panel { overflow: visible; }
-
-    /* ── Utility ── */
-    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-<!-- ── Header ── -->
-<header id="header">
-  <span id="app-title">Risk Insights</span>
-
-  <div class="input-group">
-    <label for="hostname">Hostname</label>
-    <input type="text" id="hostname" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
-  </div>
-
-  <div class="input-group">
-    <label for="clientId">Client ID</label>
-    <input type="text" id="clientId" autocomplete="off" spellcheck="false">
-  </div>
-
-  <div class="input-group">
-    <label for="clientSecret">Client Secret</label>
-    <input type="password" id="clientSecret" autocomplete="new-password">
-  </div>
-
-  <div class="input-group" style="max-width:220px;">
-    <label for="view">View</label>
-    <input type="text" id="view" value="TPRM Global View" readonly aria-readonly="true">
-  </div>
-
-  <button id="fetchBtn" type="button">
-    <svg id="fetchIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
+<!-- ── App bar ── -->
+<header id="appbar">
+  <!-- Product mark -->
+  <div id="product-mark">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
     </svg>
-    Fetch
-  </button>
+    Risk Insights
+  </div>
 
-  <span id="status" role="status" aria-live="polite" aria-atomic="true">Idle</span>
+  <!-- Zone tab strip -->
+  <div id="zones" role="tablist" aria-label="Zone filter"></div>
+
+  <!-- Right cluster -->
+  <div id="appbar-right">
+    <button id="refreshBtn" class="bar-btn" type="button" aria-label="Refresh data">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Refresh
+    </button>
+
+    <span id="status" role="status" aria-live="polite" aria-atomic="true"></span>
+
+    <div class="dropdown-wrap">
+      <button id="exportBtn" class="bar-btn" type="button" aria-haspopup="true" aria-expanded="false">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div id="exportMenu" role="menu">
+        <button class="menu-item" id="exportPpt" role="menuitem" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+          </svg>
+          PowerPoint (.pptx)
+        </button>
+        <button class="menu-item" id="exportImg" role="menuitem" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          Zone image (PNG)
+        </button>
+        <button class="menu-item" id="exportCsv" role="menuitem" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>
+          </svg>
+          Crosstab CSV
+        </button>
+      </div>
+    </div>
+
+    <button id="settingsBtn" type="button" aria-label="Settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
 </header>
 
 <!-- ── Toast container ── -->
 <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
-<!-- ── Main ── -->
-<main id="main">
+<!-- ── Onboarding banner ── -->
+<div id="banner" class="hidden" role="alert">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--gold);flex-shrink:0">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <span id="banner-text">Connect your OneTrust data to load insights.</span>
+  <button id="banner-open" type="button">Open Settings</button>
+  <button id="banner-dismiss" type="button" aria-label="Dismiss banner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
 
-  <!-- Zone filter + screenshot button -->
-  <div id="zones-panel">
-    <div id="zones" role="tablist" aria-label="Zone filter"></div>
-    <button id="screenshotBtn" type="button" title="Download zone image" aria-label="Download zone image">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      Download zone image
-    </button>
-  </div>
+<!-- ── Main canvas ── -->
+<main id="main">
 
   <!-- Empty state -->
   <div id="empty">
-    <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--fg-dim)">
       <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
     </svg>
     <h2>No data loaded</h2>
-    <p>Enter your OneTrust credentials and click <strong>Fetch</strong> to load risk insights.</p>
+    <p>Open Settings, connect your OneTrust credentials, then click Refresh to load risk insights.</p>
   </div>
 
   <!-- Insights (hidden until data loaded) -->
@@ -833,81 +935,78 @@
     <!-- Zone heading (visible in screenshots) -->
     <div id="zone-heading"></div>
 
-    <!-- Panel 1: KPI cards -->
-    <div class="panel" id="kpis-wrap">
-      <div class="panel-header">
-        <div class="panel-title">Key Metrics</div>
-        <div class="panel-toolbar">
+    <!-- KPI tile -->
+    <div class="tile" id="kpis-wrap">
+      <div class="tile-header">
+        <div class="tile-title">Key Metrics</div>
+        <div class="tile-toolbar">
           <button class="tool-btn" id="kpisCopyBtn" type="button" aria-label="Copy KPI summary" title="Copy KPI summary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
           <button class="tool-btn" id="kpisDownloadBtn" type="button" aria-label="Download KPI panel as PNG" title="Download KPI panel as PNG">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
           </button>
         </div>
       </div>
-      <div class="panel-body">
+      <div class="tile-body">
         <div id="kpis" aria-label="Key metrics"></div>
       </div>
     </div>
 
-    <!-- Panel 2+3: Charts side by side -->
+    <!-- Charts row -->
     <div class="chart-row">
-      <!-- Panel 2: Pie chart -->
-      <div class="panel" id="pie-panel">
-        <div class="panel-header">
-          <div class="panel-title">Risks by Domain</div>
-          <div class="panel-toolbar">
+      <!-- Pie tile -->
+      <div class="tile" id="pie-panel">
+        <div class="tile-header">
+          <div class="tile-title">Risks by Domain</div>
+          <div class="tile-toolbar">
             <button class="tool-btn" id="pieCopyBtn" type="button" aria-label="Copy pie chart as image" title="Copy pie chart as image">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
             <button class="tool-btn" id="pieDownloadBtn" type="button" aria-label="Download pie chart as PNG" title="Download pie chart as PNG">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
             </button>
           </div>
         </div>
-        <div class="panel-body">
+        <div class="tile-body">
           <div id="pie-container" class="chart-container">
             <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- Panel 3: Stacked bar chart -->
-      <div class="panel" id="bar-panel">
-        <div class="panel-header">
-          <div class="panel-title">Domain x Category Breakdown</div>
-          <div class="panel-toolbar">
+      <!-- Bar tile -->
+      <div class="tile" id="bar-panel">
+        <div class="tile-header">
+          <div class="tile-title">Domain x Category Breakdown</div>
+          <div class="tile-toolbar">
             <button class="tool-btn" id="barCopyBtn" type="button" aria-label="Copy bar chart as image" title="Copy bar chart as image">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
             <button class="tool-btn" id="barDownloadBtn" type="button" aria-label="Download bar chart as PNG" title="Download bar chart as PNG">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
             </button>
           </div>
         </div>
-        <div class="panel-body">
+        <div class="tile-body">
           <div id="bar-container" class="chart-container">
             <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
           </div>
@@ -915,57 +1014,58 @@
       </div>
     </div>
 
-    <!-- Panel 4: Narrative -->
-    <div class="panel" id="narrative-panel">
-      <div class="panel-header">
-        <div class="panel-title">Narrative Summary</div>
-        <div class="panel-toolbar">
-          <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-          <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
+    <!-- Table + Narrative row -->
+    <div class="data-row">
+      <!-- Table tile -->
+      <div class="tile" id="table-panel">
+        <div class="tile-header">
+          <div class="tile-title">Crosstab: Domain by Category</div>
+          <div class="tile-toolbar">
+            <button class="tool-btn" id="tableCopyBtn" type="button" aria-label="Copy crosstab as TSV" title="Copy crosstab as TSV (paste into Excel)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="tableDownloadBtn" type="button" aria-label="Download crosstab as CSV" title="Download crosstab as CSV">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tile-body">
+          <div class="table-scroll">
+            <table id="table" aria-label="Risk counts by domain and category">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <div class="panel-body">
-        <div id="narrative" aria-label="Narrative summary"></div>
-      </div>
-    </div>
 
-    <!-- Panel 5: Crosstab table -->
-    <div class="panel" id="table-panel">
-      <div class="panel-header">
-        <div class="panel-title">Crosstab: Domain by Category</div>
-        <div class="panel-toolbar">
-          <button class="tool-btn" id="tableCopyBtn" type="button" aria-label="Copy crosstab as TSV" title="Copy crosstab as TSV (paste into Excel)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-          <button class="tool-btn" id="tableDownloadBtn" type="button" aria-label="Download crosstab as CSV" title="Download crosstab as CSV">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
+      <!-- Narrative tile -->
+      <div class="tile" id="narrative-panel">
+        <div class="tile-header">
+          <div class="tile-title">Narrative Summary</div>
+          <div class="tile-toolbar">
+            <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="panel-body">
-        <div class="table-scroll">
-          <table id="table" aria-label="Risk counts by domain and category">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
+        <div class="tile-body">
+          <div id="narrative" aria-label="Narrative summary"></div>
         </div>
       </div>
     </div>
@@ -973,6 +1073,69 @@
   </div><!-- #insights -->
 
 </main>
+
+<!-- ── Settings modal ── -->
+<div id="settings-scrim" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div id="settings">
+    <div id="settings-head">
+      <h2 id="settings-title">Settings</h2>
+      <button id="settingsClose" type="button" aria-label="Close settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div id="settings-body">
+      <div class="modal-section-label">Connection</div>
+
+      <div class="field-group">
+        <label for="cfgHost">Hostname</label>
+        <input type="text" id="cfgHost" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field-group">
+        <label for="cfgId">Client ID</label>
+        <input type="text" id="cfgId" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field-group">
+        <label for="cfgSecret">Client Secret</label>
+        <input type="password" id="cfgSecret" autocomplete="new-password">
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="modal-btn" id="cfgTest" type="button">Test Connection</button>
+        <span id="cfgTestResult" aria-live="polite"></span>
+      </div>
+
+      <div class="modal-section-label" style="margin-top:4px">Schedule</div>
+
+      <div class="field-group">
+        <label for="cfgMode">Auto-refresh</label>
+        <select id="cfgMode">
+          <option value="off">Off</option>
+          <option value="hourly">Hourly</option>
+          <option value="daily">Daily</option>
+          <option value="interval">Every N hours</option>
+        </select>
+      </div>
+
+      <div class="field-group" id="cfgTimeWrap" style="display:none">
+        <label for="cfgTime">Time of day</label>
+        <input type="time" id="cfgTime">
+      </div>
+
+      <div class="field-group" id="cfgIntervalWrap" style="display:none">
+        <label for="cfgInterval">Interval (hours)</label>
+        <input type="number" id="cfgInterval" min="1" max="168" step="1" value="4">
+      </div>
+    </div>
+    <div id="settings-footer">
+      <button class="modal-btn" id="cfgTest2" type="button" style="display:none"></button>
+      <button class="modal-btn" id="cfgSave" type="button">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -985,27 +1148,31 @@
   var barChart = null;
   var sortCol = null;
   var sortAsc = true;
+  var lastRunSeen = null;   // for slow-cadence auto-refresh
+  var pollTimer = null;     // fast poll timer
+  var slowTimer = null;     // slow poll timer
+  var savedHasSecret = false;
 
   var ZONE_ORDER = ['GHQ', 'AFR', 'SAZ', 'MAZ', 'NAZ', 'APAC', 'EUR', 'BEES', 'BEES-FT', 'Overall'];
 
-  // ── Chart palette (gold/amber tones suitable for dark bg) ──────────────────
+  // ── Chart palettes ─────────────────────────────────────────────────────────
   var CAT_COLORS = {
     'COMMERCIAL': '#e8c810',
     'LOGISTICS':  '#c99a1e',
     'NCI':        '#f5da3a',
     'PACKAGING':  '#a89572',
-    'TECHNOLOGY': '#cdbf9f',
-    'RAU':        '#897c64',
-    'Fees':       '#40351f',
+    'TECHNOLOGY': '#c8c6c4',
+    'RAU':        '#797775',
+    'Fees':       '#3b3a39',
   };
 
   var PIE_PALETTE = [
-    '#e8c810','#c99a1e','#f5da3a','#a89572','#cdbf9f',
-    '#897c64','#5a4e3a','#40351f','#d4a820','#b8922a',
+    '#e8c810','#c99a1e','#f5da3a','#a89572','#c8c6c4',
+    '#797775','#5a4e3a','#3b3a39','#d4a820','#b8922a',
     '#f0d060','#9a8060','#7a6040','#e0b830','#c0a020',
   ];
 
-  // ── Elements ───────────────────────────────────────────────────────────────
+  // ── Element shortcuts ──────────────────────────────────────────────────────
   var $ = function(id) { return document.getElementById(id); };
   var elStatus    = $('status');
   var elZones     = $('zones');
@@ -1014,75 +1181,57 @@
   var elKpis      = $('kpis');
   var elNarrative = $('narrative');
   var elTable     = $('table');
-  var elFetchBtn  = $('fetchBtn');
+  var elRefreshBtn= $('refreshBtn');
+  var elBanner    = $('banner');
+  var elScrim     = $('settings-scrim');
 
-  // ── Toast helper ───────────────────────────────────────────────────────────
+  // ── Toast ──────────────────────────────────────────────────────────────────
   function toast(msg) {
-    var container = $('toast-container');
-    if (!container) return;
+    var c = $('toast-container');
+    if (!c) return;
     var el = document.createElement('div');
     el.className = 'toast';
     el.textContent = msg;
-    container.appendChild(el);
+    c.appendChild(el);
     setTimeout(function() {
       el.classList.add('toast-out');
-      setTimeout(function() {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 250);
-    }, 2000);
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 250);
+    }, 2200);
   }
 
   // ── Download helpers ───────────────────────────────────────────────────────
   function downloadBlob(filename, blob) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      URL.revokeObjectURL(url);
-      if (a.parentNode) a.parentNode.removeChild(a);
-    }, 500);
+    a.href = url; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 500);
     toast('Downloaded ' + filename);
   }
 
   function downloadDataURL(filename, dataURL) {
     var a = document.createElement('a');
-    a.href = dataURL;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      if (a.parentNode) a.parentNode.removeChild(a);
-    }, 500);
+    a.href = dataURL; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function() { if (a.parentNode) a.parentNode.removeChild(a); }, 500);
     toast('Downloaded ' + filename);
   }
 
   // ── Copy helpers ───────────────────────────────────────────────────────────
   function copyText(str) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(str).then(function() {
-        toast('Copied');
-      }).catch(function() {
-        toast('Copy failed');
-      });
+      navigator.clipboard.writeText(str).then(function() { toast('Copied'); }).catch(function() { toast('Copy failed'); });
     } else {
       toast('Copy failed');
     }
   }
 
-  // chartToOpaqueDataURL: composites chartCanvas onto an opaque surface background
   function chartToOpaqueDataURL(chartCanvas) {
-    var w = chartCanvas.width;
-    var h = chartCanvas.height;
+    var w = chartCanvas.width, h = chartCanvas.height;
     var tmp = document.createElement('canvas');
-    tmp.width = w;
-    tmp.height = h;
+    tmp.width = w; tmp.height = h;
     var ctx = tmp.getContext('2d');
-    ctx.fillStyle = '#14100a';
+    ctx.fillStyle = '#252423';
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(chartCanvas, 0, 0);
     return tmp.toDataURL('image/png');
@@ -1101,29 +1250,19 @@
         navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
           toast('Copied');
         }).catch(function() {
-          // fallback to CSV
           var csv = csvFallbackFn ? csvFallbackFn() : null;
-          if (csv) {
-            navigator.clipboard.writeText(csv).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
-          } else {
-            toast('Copy failed');
-          }
+          if (csv) { navigator.clipboard.writeText(csv).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); }); }
+          else { toast('Copy failed'); }
         });
       } catch(e) {
         var csv2 = csvFallbackFn ? csvFallbackFn() : null;
-        if (csv2) {
-          navigator.clipboard.writeText(csv2).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
-        } else {
-          toast('Copy failed');
-        }
+        if (csv2) { navigator.clipboard.writeText(csv2).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); }); }
+        else { toast('Copy failed'); }
       }
     } else {
       var csv3 = csvFallbackFn ? csvFallbackFn() : null;
-      if (csv3) {
-        navigator.clipboard.writeText(csv3).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); });
-      } else {
-        toast('Copy failed');
-      }
+      if (csv3) { navigator.clipboard.writeText(csv3).then(function() { toast('Copied as CSV'); }).catch(function() { toast('Copy failed'); }); }
+      else { toast('Copy failed'); }
     }
   }
 
@@ -1133,52 +1272,33 @@
     return true;
   }
 
-  // ── Zone code helper ───────────────────────────────────────────────────────
-  function zoneSlug() {
-    return currentZone.toLowerCase();
-  }
+  function zoneSlug() { return currentZone.toLowerCase(); }
 
-  // ── Status helpers ─────────────────────────────────────────────────────────
+  // ── Status chip ───────────────────────────────────────────────────────────
   function setStatus(text, cls) {
     elStatus.textContent = text;
-    elStatus.className   = cls || '';
+    elStatus.className = cls || '';
     elStatus.title = text;
   }
 
-  function showSpinner(show) {
-    if (show) {
-      var icon = $('fetchIcon');
-      if (icon) {
-        icon.outerHTML = '<span id="fetchIcon" class="spinner" aria-hidden="true"></span>';
-      }
-    } else {
-      var sp = $('fetchIcon');
-      if (sp) {
-        sp.outerHTML = '<svg id="fetchIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-      }
-    }
-  }
-
-  function fmtGeneratedAt(iso) {
+  function fmtTime(iso) {
+    if (!iso) return '';
     try {
-      var d = new Date(iso);
-      return d.toLocaleString(undefined, {
-        year: 'numeric', month: 'short', day: 'numeric',
+      return new Date(iso).toLocaleString(undefined, {
+        month: 'short', day: 'numeric',
         hour: '2-digit', minute: '2-digit'
       });
-    } catch (_) {
-      return iso || '';
-    }
+    } catch(_) { return iso; }
   }
 
-  // ── Zone filter ────────────────────────────────────────────────────────────
-  function buildZoneFilter() {
+  // ── Zone tabs ─────────────────────────────────────────────────────────────
+  function buildZoneTabs() {
     elZones.innerHTML = '';
     ZONE_ORDER.forEach(function(code) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.setAttribute('role', 'tab');
-      btn.className = 'zone-btn';
+      btn.className = 'zone-tab';
       btn.textContent = code;
       btn.dataset.zone = code;
       btn.setAttribute('aria-selected', code === currentZone ? 'true' : 'false');
@@ -1189,16 +1309,14 @@
 
   function selectZone(code) {
     currentZone = code;
-    sortCol = null;
-    sortAsc = true;
-    elZones.querySelectorAll('.zone-btn').forEach(function(btn) {
-      var sel = btn.dataset.zone === code;
-      btn.setAttribute('aria-selected', sel ? 'true' : 'false');
+    sortCol = null; sortAsc = true;
+    elZones.querySelectorAll('.zone-tab').forEach(function(btn) {
+      btn.setAttribute('aria-selected', btn.dataset.zone === code ? 'true' : 'false');
     });
-    if (payload) render();
+    if (payload) render();   // NO fetch — re-render from cached payload only
   }
 
-  // ── Show / hide sections ───────────────────────────────────────────────────
+  // ── Show/hide sections ─────────────────────────────────────────────────────
   function showData() {
     elEmpty.classList.add('hidden');
     elInsights.classList.remove('hidden');
@@ -1210,52 +1328,38 @@
   }
 
   // ── Category helpers ───────────────────────────────────────────────────────
-  function catLabel(c) {
-    return c === '(blank)' ? 'Uncategorized' : c;
-  }
+  function catLabel(c) { return c === '(blank)' ? 'Uncategorized' : c; }
 
   function activeCatsFor(z) {
     var byCat = z.by_cat || {};
     var known = (payload.cat_order || []).filter(function(cat) { return cat in byCat; });
-    var knownSet = new Set(known);
-    var extras = Object.keys(byCat).filter(function(cat) { return !knownSet.has(cat); });
+    var knownSet = {};
+    known.forEach(function(k) { knownSet[k] = true; });
+    var extras = Object.keys(byCat).filter(function(cat) { return !knownSet[cat]; });
     return known.concat(extras);
   }
 
-  // ── Render KPIs ───────────────────────────────────────────────────────────
+  // ── KPI rendering ─────────────────────────────────────────────────────────
   function renderKpis(z) {
     elKpis.innerHTML = '';
-
-    var card1 = makeKpiCard(
-      'Total Risks',
-      z.total === 0 ? '0' : String(z.total),
-      z.total === 0 ? 'No risks identified' : 'across all categories'
-    );
-    elKpis.appendChild(card1);
-
+    elKpis.appendChild(makeKpiCard('Total Risks', String(z.total),
+      z.total === 0 ? 'No risks identified' : 'across all categories'));
     if (z.total > 0 && z.by_domain && z.by_domain.length >= 1) {
       var top2 = z.by_domain.slice(0, 2);
-      var top2Names = top2.map(function(pair) { return pair[0]; });
-      var top2Pct   = top2.reduce(function(s, pair) { return s + (z.domain_pct[pair[0]] || 0); }, 0);
-      var subtitle   = top2Names.join(' + ');
-      var card2 = makeKpiCard('Top Domains Combined', top2Pct + '%', subtitle);
-      elKpis.appendChild(card2);
+      var top2Names = top2.map(function(p) { return p[0]; });
+      var top2Pct = top2.reduce(function(s, p) { return s + (z.domain_pct[p[0]] || 0); }, 0);
+      elKpis.appendChild(makeKpiCard('Top Domains Combined', top2Pct + '%', top2Names.join(' + ')));
     } else {
       elKpis.appendChild(makeKpiCard('Top Domains', '—', 'No domain data'));
     }
-
     if (z.total > 0 && z.by_cat && Object.keys(z.by_cat).length > 0) {
       var topCat = null, topCount = -1;
-      Object.entries(z.by_cat).forEach(function(entry) {
-        var cat = entry[0], cnt = entry[1];
-        if (cnt > topCount) { topCount = cnt; topCat = cat; }
+      Object.keys(z.by_cat).forEach(function(cat) {
+        if (z.by_cat[cat] > topCount) { topCount = z.by_cat[cat]; topCat = cat; }
       });
-      var card3 = makeKpiCard(
-        'Top Category',
+      elKpis.appendChild(makeKpiCard('Top Category',
         topCat ? catLabel(topCat) : '—',
-        topCat ? (topCount + ' risk' + (topCount !== 1 ? 's' : '')) : 'No data'
-      );
-      elKpis.appendChild(card3);
+        topCat ? (topCount + ' risk' + (topCount !== 1 ? 's' : '')) : 'No data'));
     } else {
       elKpis.appendChild(makeKpiCard('Top Category', '—', 'No category data'));
     }
@@ -1264,96 +1368,57 @@
   function makeKpiCard(label, value, sub) {
     var card = document.createElement('div');
     card.className = 'kpi-card';
-    var l = document.createElement('div');
-    l.className = 'kpi-label';
-    l.textContent = label;
-    var v = document.createElement('div');
-    v.className = 'kpi-value';
-    v.textContent = value;
-    var s = document.createElement('div');
-    s.className = 'kpi-sub';
-    s.textContent = sub;
-    card.appendChild(l);
-    card.appendChild(v);
-    card.appendChild(s);
+    var l = document.createElement('div'); l.className = 'kpi-label'; l.textContent = label;
+    var v = document.createElement('div'); v.className = 'kpi-value'; v.textContent = value;
+    var s = document.createElement('div'); s.className = 'kpi-sub'; s.textContent = sub;
+    card.appendChild(l); card.appendChild(v); card.appendChild(s);
     return card;
   }
 
-  // ── KPI text summary for copy ──────────────────────────────────────────────
   function kpiTextSummary(z) {
-    var lines = [];
-    lines.push('Total Risks: ' + z.total);
+    var lines = ['Total Risks: ' + z.total];
     if (z.total > 0 && z.by_domain && z.by_domain.length >= 1) {
       var top2 = z.by_domain.slice(0, 2);
-      var top2Names = top2.map(function(p) { return p[0]; });
-      var top2Pct = top2.reduce(function(s, p) { return s + (z.domain_pct[p[0]] || 0); }, 0);
-      lines.push('Top Domains Combined: ' + top2Pct + '% (' + top2Names.join(' + ') + ')');
+      lines.push('Top Domains Combined: ' + top2.reduce(function(s,p){return s+(z.domain_pct[p[0]]||0);},0) + '% (' + top2.map(function(p){return p[0];}).join(' + ') + ')');
     }
-    if (z.total > 0 && z.by_cat && Object.keys(z.by_cat).length > 0) {
-      var topCat = null, topCount = -1;
-      Object.entries(z.by_cat).forEach(function(e) {
-        if (e[1] > topCount) { topCount = e[1]; topCat = e[0]; }
-      });
-      if (topCat) lines.push('Top Category: ' + catLabel(topCat) + ' (' + topCount + ' risks)');
+    if (z.total > 0 && z.by_cat) {
+      var tc = null, tx = -1;
+      Object.keys(z.by_cat).forEach(function(c){ if(z.by_cat[c]>tx){tx=z.by_cat[c];tc=c;} });
+      if (tc) lines.push('Top Category: ' + catLabel(tc) + ' (' + tx + ' risks)');
     }
     return lines.join('\n');
   }
 
-  // ── Render Pie ─────────────────────────────────────────────────────────────
+  // ── Pie rendering ─────────────────────────────────────────────────────────
   function renderPie(z) {
     if (pieChart) { pieChart.destroy(); pieChart = null; }
     var labels = (z.by_domain || []).map(function(p) { return p[0]; });
     var data   = (z.by_domain || []).map(function(p) { return p[1]; });
     var colors = labels.map(function(_, i) { return PIE_PALETTE[i % PIE_PALETTE.length]; });
-    var sliceBorder = '#14100a';
     var ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
       type: 'pie',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: colors,
-          borderColor: sliceBorder,
-          borderWidth: 2,
-          hoverBorderWidth: 3,
-        }]
-      },
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#252423', borderWidth: 2 }] },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              padding: 8,
-              boxWidth: 12,
-              font: { size: 10, family: '"Fira Sans", system-ui, sans-serif' },
-              color: '#c4b79b',
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(ctx2) {
-                var total2 = ctx2.dataset.data.reduce(function(a, b) { return a + b; }, 0);
-                var pct = total2 ? Math.round(100 * ctx2.parsed / total2) : 0;
-                return ' ' + ctx2.label + ': ' + ctx2.parsed + ' (' + pct + '%)';
-              }
-            }
-          }
+          legend: { position: 'bottom', labels: { padding: 8, boxWidth: 11, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
+          tooltip: { callbacks: { label: function(c) {
+            var tot = c.dataset.data.reduce(function(a,b){return a+b;},0);
+            return ' '+c.label+': '+c.parsed+' ('+(tot?Math.round(100*c.parsed/tot):0)+'%)';
+          }}}
         }
       }
     });
   }
 
-  // pie CSV fallback
   function pieCsvData(z) {
     var rows = ['domain,count'];
-    (z.by_domain || []).forEach(function(p) { rows.push(csvEscape(p[0]) + ',' + p[1]); });
+    (z.by_domain||[]).forEach(function(p){rows.push(csvEscape(p[0])+','+p[1]);});
     return rows.join('\n');
   }
 
-  // ── Render Bar ─────────────────────────────────────────────────────────────
+  // ── Bar rendering ─────────────────────────────────────────────────────────
   function renderBar(z) {
     if (barChart) { barChart.destroy(); barChart = null; }
     var domains = (z.by_domain || []).map(function(p) { return p[0]; });
@@ -1361,12 +1426,9 @@
     var datasets = activeCats.map(function(cat) {
       return {
         label: catLabel(cat),
-        data: domains.map(function(dom) {
-          return (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0;
-        }),
-        backgroundColor: CAT_COLORS[cat] || '#897c64',
-        borderColor: 'transparent',
-        borderWidth: 0,
+        data: domains.map(function(dom) { return (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0; }),
+        backgroundColor: CAT_COLORS[cat] || '#797775',
+        borderColor: 'transparent', borderWidth: 0
       };
     });
     var ctx = $('bar').getContext('2d');
@@ -1374,120 +1436,66 @@
       type: 'bar',
       data: { labels: domains, datasets: datasets },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         scales: {
-          x: {
-            stacked: true,
-            ticks: {
-              color: '#897c64',
-              font: { size: 9, family: '"Fira Sans", system-ui, sans-serif' },
-              maxRotation: 45,
-            },
-            grid: { color: 'rgba(232,200,16,0.08)' },
-          },
-          y: {
-            stacked: true,
-            ticks: {
-              color: '#897c64',
-              font: { size: 10, family: '"Fira Code", monospace' },
-            },
-            grid: { color: 'rgba(232,200,16,0.08)' },
-          }
+          x: { stacked: true, ticks: { color: '#797775', font: { size: 9, family: '"Fira Sans",system-ui,sans-serif' }, maxRotation: 45 }, grid: { color: 'rgba(59,58,57,0.8)' } },
+          y: { stacked: true, ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } }, grid: { color: 'rgba(59,58,57,0.8)' } }
         },
         plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              padding: 8,
-              boxWidth: 12,
-              font: { size: 10, family: '"Fira Sans", system-ui, sans-serif' },
-              color: '#c4b79b',
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            callbacks: {
-              footer: function(items) {
-                var sum = items.reduce(function(a, i) { return a + i.parsed.y; }, 0);
-                return 'Total: ' + sum;
-              }
-            }
-          }
+          legend: { position: 'top', labels: { padding: 8, boxWidth: 11, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
+          tooltip: { mode: 'index', callbacks: { footer: function(items) { return 'Total: '+items.reduce(function(a,i){return a+i.parsed.y;},0); } } }
         }
       }
     });
   }
 
-  // bar CSV fallback
   function barCsvData(z) {
     var activeCats = activeCatsFor(z);
-    var domains = (z.by_domain || []).map(function(p) { return p[0]; });
-    var header = ['domain'].concat(activeCats.map(catLabel)).map(csvEscape).join(',');
-    var rows = [header];
+    var domains = (z.by_domain||[]).map(function(p){return p[0];});
+    var rows = [['domain'].concat(activeCats.map(catLabel)).map(csvEscape).join(',')];
     domains.forEach(function(dom) {
-      var cells = [csvEscape(dom)].concat(activeCats.map(function(cat) {
-        return String((z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
-      }));
-      rows.push(cells.join(','));
+      rows.push([csvEscape(dom)].concat(activeCats.map(function(cat){return String((z.crosstab&&z.crosstab[dom]&&z.crosstab[dom][cat])||0);})).join(','));
     });
     return rows.join('\n');
   }
 
-  // ── Render Narrative ───────────────────────────────────────────────────────
+  // ── Narrative rendering ───────────────────────────────────────────────────
   function renderNarrative(z) {
     elNarrative.innerHTML = '';
-    var lines = z.narrative || [];
-    lines.forEach(function(line) {
+    (z.narrative || []).forEach(function(line) {
       if (line === '' || line === null || line === undefined) {
         var sp = document.createElement('span');
-        sp.className = 'narrative-blank';
-        sp.setAttribute('aria-hidden', 'true');
+        sp.className = 'narrative-blank'; sp.setAttribute('aria-hidden','true');
         elNarrative.appendChild(sp);
       } else {
         var sp = document.createElement('span');
         sp.className = 'narrative-line';
-        // Highlight lines that look like domain headings (e.g. start with a domain name followed by colon)
-        if (/^[A-Z][^:]{0,40}:/.test(line)) {
-          sp.classList.add('domain-line');
-        }
+        if (/^[A-Z][^:]{0,40}:/.test(line)) sp.classList.add('domain-line');
         sp.textContent = line;
         elNarrative.appendChild(sp);
       }
     });
   }
 
-  // ── Render Table ───────────────────────────────────────────────────────────
+  // ── Table rendering ───────────────────────────────────────────────────────
   function renderTable(z) {
     var thead = elTable.tHead;
     var tbody = elTable.tBodies[0];
-    thead.innerHTML = '';
-    tbody.innerHTML = '';
-
+    thead.innerHTML = ''; tbody.innerHTML = '';
     var activeCats = activeCatsFor(z);
     var cols = ['Domain'].concat(activeCats).concat(['Total']);
     var colLabels = ['Domain'].concat(activeCats.map(catLabel)).concat(['Total']);
-
     var tr = document.createElement('tr');
     cols.forEach(function(col, i) {
       var th = document.createElement('th');
       th.textContent = colLabels[i];
       if (col === 'Total') th.classList.add('total-col');
       var ind = document.createElement('span');
-      ind.className = 'sort-indicator';
-      ind.setAttribute('aria-hidden', 'true');
-      ind.textContent = ' ↕';
-      th.appendChild(ind);
-      th.setAttribute('aria-sort', 'none');
-      th.tabIndex = 0;
-      (function(colIdx) {
-        th.addEventListener('click', function() { tableSort(colIdx, z, activeCats); });
-        th.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            tableSort(colIdx, z, activeCats);
-          }
-        });
+      ind.className = 'sort-indicator'; ind.setAttribute('aria-hidden','true'); ind.textContent = ' ↕';
+      th.appendChild(ind); th.setAttribute('aria-sort','none'); th.tabIndex = 0;
+      (function(ci) {
+        th.addEventListener('click', function(){ tableSort(ci, z, activeCats); });
+        th.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tableSort(ci, z, activeCats); } });
       })(i);
       if (sortCol === i) {
         th.classList.add('sort-active');
@@ -1497,34 +1505,23 @@
       tr.appendChild(th);
     });
     thead.appendChild(tr);
-
     var rows = (z.by_domain || []).map(function(entry) {
-      var dom = entry[0], domCount = entry[1];
-      var cells = [dom].concat(activeCats.map(function(cat) {
-        return (z.crosstab[dom] && z.crosstab[dom][cat]) || 0;
-      })).concat([domCount]);
-      return cells;
+      var dom = entry[0], tot = entry[1];
+      return [dom].concat(activeCats.map(function(cat){ return (z.crosstab[dom]&&z.crosstab[dom][cat])||0; })).concat([tot]);
     });
-
     if (sortCol !== null) {
-      rows.sort(function(a, b) {
-        var av = a[sortCol], bv = b[sortCol];
-        var cmp;
-        if (typeof av === 'number' && typeof bv === 'number') {
-          cmp = av - bv;
-        } else {
-          cmp = String(av).localeCompare(String(bv));
-        }
+      rows.sort(function(a,b) {
+        var av=a[sortCol], bv=b[sortCol];
+        var cmp = (typeof av==='number'&&typeof bv==='number') ? av-bv : String(av).localeCompare(String(bv));
         return sortAsc ? cmp : -cmp;
       });
     }
-
     rows.forEach(function(cells) {
       var row = document.createElement('tr');
       cells.forEach(function(val, i) {
         var td = document.createElement('td');
         td.textContent = val;
-        if (i === cells.length - 1) td.classList.add('total-col');
+        if (i === cells.length-1) td.classList.add('total-col');
         row.appendChild(td);
       });
       tbody.appendChild(row);
@@ -1532,17 +1529,12 @@
   }
 
   function tableSort(colIdx, z, activeCats) {
-    if (sortCol === colIdx) {
-      sortAsc = !sortAsc;
-    } else {
-      sortCol = colIdx;
-      sortAsc = colIdx === 0;
-      if (colIdx > 0) sortAsc = false;
-    }
+    if (sortCol === colIdx) { sortAsc = !sortAsc; }
+    else { sortCol = colIdx; sortAsc = colIdx === 0; }
     renderTable(z);
   }
 
-  // ── CSV/TSV helpers ────────────────────────────────────────────────────────
+  // ── CSV/TSV helpers ───────────────────────────────────────────────────────
   function csvEscape(val) {
     var s = String(val === null || val === undefined ? '' : val);
     if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
@@ -1552,36 +1544,24 @@
   }
 
   function tableTsv(z) {
-    var activeCats = activeCatsFor(z);
-    var header = ['Domain'].concat(activeCats.map(catLabel)).concat(['Total']).join('\t');
-    var rows = [header];
-    (z.by_domain || []).forEach(function(entry) {
-      var dom = entry[0], domCount = entry[1];
-      var cells = [dom].concat(activeCats.map(function(cat) {
-        return String((z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
-      })).concat([String(domCount)]);
-      rows.push(cells.join('\t'));
+    var ac = activeCatsFor(z);
+    var rows = [['Domain'].concat(ac.map(catLabel)).concat(['Total']).join('\t')];
+    (z.by_domain||[]).forEach(function(e) {
+      rows.push([e[0]].concat(ac.map(function(c){return String((z.crosstab[e[0]]&&z.crosstab[e[0]][c])||0);})).concat([String(e[1])]).join('\t'));
     });
     return rows.join('\n');
   }
 
   function tableCsv(z) {
-    var activeCats = activeCatsFor(z);
-    var header = ['Domain'].concat(activeCats.map(catLabel)).concat(['Total']).map(csvEscape).join(',');
-    var rows = [header];
-    (z.by_domain || []).forEach(function(entry) {
-      var dom = entry[0], domCount = entry[1];
-      var cells = [csvEscape(dom)].concat(activeCats.map(function(cat) {
-        return String((z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
-      })).concat([String(domCount)]);
-      rows.push(cells.join(','));
+    var ac = activeCatsFor(z);
+    var rows = [['Domain'].concat(ac.map(catLabel)).concat(['Total']).map(csvEscape).join(',')];
+    (z.by_domain||[]).forEach(function(e) {
+      rows.push([csvEscape(e[0])].concat(ac.map(function(c){return String((z.crosstab[e[0]]&&z.crosstab[e[0]][c])||0);})).concat([String(e[1])]).join(','));
     });
     return rows.join('\n');
   }
 
-  function narrativeText(z) {
-    return (z.narrative || []).join('\n');
-  }
+  function narrativeText(z) { return (z.narrative || []).join('\n'); }
 
   // ── Main render ───────────────────────────────────────────────────────────
   function render() {
@@ -1589,11 +1569,8 @@
     var z = payload.zones[currentZone];
     if (!z) return;
     showData();
-    // Update zone heading
-    var heading = $('zone-heading');
-    if (heading) {
-      heading.textContent = currentZone + ' — Risk Insights';
-    }
+    var h = $('zone-heading');
+    if (h) h.textContent = currentZone + ' — Risk Insights';
     renderKpis(z);
     renderPie(z);
     renderBar(z);
@@ -1601,190 +1578,395 @@
     renderTable(z);
   }
 
-  // ── Store payload + set status ─────────────────────────────────────────────
-  function applyPayload(p, source) {
+  // ── Apply payload ─────────────────────────────────────────────────────────
+  function applyPayload(p) {
     payload = p;
-    currentZone = 'Overall';
-    sortCol = null;
-    sortAsc = true;
-    elZones.querySelectorAll('.zone-btn').forEach(function(btn) {
+    currentZone = 'Overall'; sortCol = null; sortAsc = true;
+    elZones.querySelectorAll('.zone-tab').forEach(function(btn) {
       btn.setAttribute('aria-selected', btn.dataset.zone === 'Overall' ? 'true' : 'false');
     });
     render();
-    var n    = p.zones && p.zones[currentZone] ? p.zones[currentZone].total : '?';
-    var when = fmtGeneratedAt(p.generated_at);
-    var src  = source || p.source || '';
-    setStatus('Loaded ' + n + ' risks · ' + when + ' · ' + src, 'loaded');
   }
 
-  var VIEW = 'TPRM Global View';
+  // ── loadData: fetch /api/data and render ──────────────────────────────────
+  function loadData() {
+    fetch('/api/data').then(function(r) { return r.json(); }).then(function(j) {
+      if (!j.empty) applyPayload(j);
+    }).catch(function() { /* silently ignore */ });
+  }
 
-  // ── Load cached data ───────────────────────────────────────────────────────
-  function loadCached() {
-    fetch('/api/data').then(function(r) {
-      return r.json();
-    }).then(function(j) {
-      if (j.empty) {
-        showEmpty();
-        setStatus('Idle — enter credentials and click Fetch', '');
+  // ── Status polling ────────────────────────────────────────────────────────
+  function stopPoll() {
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  }
+
+  function applyStatusResult(j, fromSlowPoll) {
+    var state = j.state;
+    var lastRun = j.last_run;
+
+    if (state === 'running') {
+      var chip = document.createElement('span');
+      chip.className = 'spinner'; chip.setAttribute('aria-hidden','true');
+      elStatus.innerHTML = '';
+      elStatus.appendChild(chip);
+      elStatus.appendChild(document.createTextNode(' Refreshing…'));
+      elStatus.className = 'running';
+      elRefreshBtn.disabled = true;
+    } else if (state === 'done') {
+      setStatus('Updated ' + fmtTime(lastRun), 'done');
+      elRefreshBtn.disabled = false;
+      if (!fromSlowPoll) {
+        stopPoll();
+        loadData();
+      }
+      // slow poll auto-refresh: detect a newer last_run
+      if (lastRun && lastRun !== lastRunSeen) {
+        lastRunSeen = lastRun;
+        if (fromSlowPoll) loadData();
+      }
+    } else if (state === 'error') {
+      setStatus('Error: ' + (j.message || 'unknown'), 'error');
+      elRefreshBtn.disabled = false;
+      if (!fromSlowPoll) stopPoll();
+    } else {
+      // idle
+      if (!fromSlowPoll) {
+        stopPoll();
+        if (lastRun) setStatus('Updated ' + fmtTime(lastRun), 'done');
+        else setStatus('', '');
+        elRefreshBtn.disabled = false;
       } else {
-        applyPayload(j, 'cache');
+        // idle slow poll — check if last_run changed
+        if (lastRun && lastRun !== lastRunSeen) {
+          lastRunSeen = lastRun;
+          loadData();
+          setStatus('Updated ' + fmtTime(lastRun), 'done');
+        }
+      }
+    }
+  }
+
+  function pollStatus() {
+    fetch('/api/status').then(function(r) { return r.json(); }).then(function(j) {
+      applyStatusResult(j, false);
+      if (j.state === 'running') {
+        pollTimer = setTimeout(pollStatus, 2000);
       }
     }).catch(function() {
-      showEmpty();
-      setStatus('Idle', '');
+      stopPoll();
+      elRefreshBtn.disabled = false;
     });
   }
 
-  // ── Fetch button ───────────────────────────────────────────────────────────
-  function doFetch() {
-    var hostname      = $('hostname').value.trim();
-    var client_id     = $('clientId').value.trim();
-    var client_secret = $('clientSecret').value;
-    var view          = VIEW;
+  function slowPoll() {
+    fetch('/api/status').then(function(r) { return r.json(); }).then(function(j) {
+      applyStatusResult(j, true);
+    }).catch(function() { /* ignore */ });
+  }
 
-    elFetchBtn.disabled = true;
-    showSpinner(true);
-    setStatus('Fetching…', 'fetching');
-
-    fetch('/api/fetch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hostname: hostname, client_id: client_id, client_secret: client_secret, view: view }),
-    }).then(function(r) {
-      var status = r.status;
-      var ok = r.ok;
-      return r.text().then(function(text) {
-        var j;
-        try { j = JSON.parse(text); } catch(_) { j = null; }
-        if (!ok || (j && j.error)) {
-          var msg = (j && j.error) || ('HTTP ' + status);
-          setStatus('Error: ' + msg, 'error');
-          return;
-        }
-        applyPayload(j, (j && j.source) || 'api');
-      });
+  // ── Refresh button ────────────────────────────────────────────────────────
+  function doRefresh() {
+    elRefreshBtn.disabled = true;
+    fetch('/api/fetch', { method: 'POST' }).then(function(r) {
+      return r.json();
+    }).then(function(j) {
+      if (j.running || j.started) {
+        var chip = document.createElement('span');
+        chip.className = 'spinner'; chip.setAttribute('aria-hidden','true');
+        elStatus.innerHTML = '';
+        elStatus.appendChild(chip);
+        elStatus.appendChild(document.createTextNode(' Refreshing…'));
+        elStatus.className = 'running';
+        stopPoll();
+        pollTimer = setTimeout(pollStatus, 2000);
+      }
     }).catch(function(e) {
       setStatus('Error: ' + (e.message || 'Network error'), 'error');
-    }).finally(function() {
-      elFetchBtn.disabled = false;
-      showSpinner(false);
+      elRefreshBtn.disabled = false;
     });
   }
 
-  // ── Export button handlers ─────────────────────────────────────────────────
-  function setupExportHandlers() {
-    // KPIs: copy text, download PNG
+  // ── Banner ────────────────────────────────────────────────────────────────
+  function updateBanner(cfg) {
+    if (!cfg.has_secret || !cfg.hostname || !cfg.client_id) {
+      elBanner.classList.remove('hidden');
+    } else {
+      elBanner.classList.add('hidden');
+    }
+  }
+
+  // ── Settings modal ────────────────────────────────────────────────────────
+  function openSettings() {
+    elScrim.classList.add('open');
+    // Move focus into modal
+    var first = $('cfgHost');
+    if (first) first.focus();
+  }
+
+  function closeSettings() {
+    elScrim.classList.remove('open');
+    $('settingsBtn').focus();
+  }
+
+  function loadConfigIntoModal() {
+    fetch('/api/config').then(function(r) { return r.json(); }).then(function(cfg) {
+      savedHasSecret = !!cfg.has_secret;
+      $('cfgHost').value = cfg.hostname || '';
+      $('cfgId').value = cfg.client_id || '';
+      // NEVER prefill secret field
+      $('cfgSecret').value = '';
+      $('cfgSecret').placeholder = savedHasSecret ? '•••• saved (leave blank to keep)' : 'client secret';
+      var sched = cfg.schedule || {};
+      $('cfgMode').value = sched.mode || 'off';
+      $('cfgTime').value = sched.time || '';
+      $('cfgInterval').value = sched.interval_hours || 4;
+      updateScheduleVisibility();
+      $('cfgTestResult').textContent = '';
+      $('cfgTestResult').className = '';
+      updateBanner(cfg);
+    }).catch(function() { /* ignore */ });
+  }
+
+  function updateScheduleVisibility() {
+    var mode = $('cfgMode').value;
+    $('cfgTimeWrap').style.display     = mode === 'daily' ? '' : 'none';
+    $('cfgIntervalWrap').style.display = mode === 'interval' ? '' : 'none';
+  }
+
+  function doTestConnection() {
+    var res = $('cfgTestResult');
+    res.textContent = 'Testing…'; res.className = '';
+    var body = {
+      hostname: $('cfgHost').value.trim(),
+      client_id: $('cfgId').value.trim(),
+      client_secret: $('cfgSecret').value
+    };
+    fetch('/api/config/test', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        res.textContent = j.ok ? 'Connection OK' : (j.message || 'Failed');
+        res.className = j.ok ? 'ok' : 'fail';
+      })
+      .catch(function(e){ res.textContent = e.message || 'Network error'; res.className = 'fail'; });
+  }
+
+  function doSave() {
+    var body = {};
+    var host = $('cfgHost').value.trim();
+    var cid  = $('cfgId').value.trim();
+    var sec  = $('cfgSecret').value;
+    if (host) body.hostname = host;
+    if (cid)  body.client_id = cid;
+    if (sec)  body.client_secret = sec;   // only include if non-blank
+    var mode = $('cfgMode').value;
+    var sched = { mode: mode };
+    if (mode === 'daily') sched.time = $('cfgTime').value;
+    if (mode === 'interval') sched.interval_hours = parseInt($('cfgInterval').value, 10) || 4;
+    body.schedule = sched;
+    fetch('/api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); })
+      .then(function(cfg){
+        closeSettings();
+        updateBanner(cfg);
+        toast('Settings saved');
+      })
+      .catch(function(){ toast('Save failed'); });
+  }
+
+  // ── Export menu ───────────────────────────────────────────────────────────
+  var elExportMenu = $('exportMenu');
+  var elExportBtn  = $('exportBtn');
+
+  function closeExportMenu() {
+    elExportMenu.classList.remove('open');
+    elExportBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleExportMenu() {
+    var isOpen = elExportMenu.classList.contains('open');
+    if (isOpen) { closeExportMenu(); }
+    else {
+      elExportMenu.classList.add('open');
+      elExportBtn.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  // ── Per-tile export/copy handlers ─────────────────────────────────────────
+  function setupTileHandlers() {
+    // KPIs
     $('kpisCopyBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      copyText(kpiTextSummary(z));
+      copyText(kpiTextSummary(payload.zones[currentZone]));
     });
-
     $('kpisDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
-      var el = $('kpis-wrap');
-      var filename = zoneSlug() + '-kpis.png';
-      html2canvas(el, { backgroundColor: '#14100a', scale: 2, useCORS: true }).then(function(canvas) {
-        downloadDataURL(filename, canvas.toDataURL('image/png'));
-      }).catch(function() { toast('Screenshot failed'); });
+      html2canvas($('kpis-wrap'), { backgroundColor: '#252423', scale: 2, useCORS: true }).then(function(c) {
+        downloadDataURL(zoneSlug() + '-kpis.png', c.toDataURL('image/png'));
+      }).catch(function(){ toast('Screenshot failed'); });
     });
 
-    // Pie: copy image (CSV fallback), download PNG
+    // Pie
     $('pieCopyBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      var canvas = $('pie');
-      copyCanvasImage(canvas, function() { return pieCsvData(z); });
+      copyCanvasImage($('pie'), function(){ return pieCsvData(payload.zones[currentZone]); });
     });
-
     $('pieDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var canvas = $('pie');
-      if (!canvas) { toast('No chart available'); return; }
-      var filename = zoneSlug() + '-domain-pie.png';
-      downloadDataURL(filename, chartToOpaqueDataURL(canvas));
+      var c = $('pie');
+      if (!c) { toast('No chart available'); return; }
+      downloadDataURL(zoneSlug() + '-domain-pie.png', chartToOpaqueDataURL(c));
     });
 
-    // Bar: copy image (CSV fallback), download PNG
+    // Bar
     $('barCopyBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      var canvas = $('bar');
-      copyCanvasImage(canvas, function() { return barCsvData(z); });
+      copyCanvasImage($('bar'), function(){ return barCsvData(payload.zones[currentZone]); });
     });
-
     $('barDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var canvas = $('bar');
-      if (!canvas) { toast('No chart available'); return; }
-      var filename = zoneSlug() + '-domain-bar.png';
-      downloadDataURL(filename, chartToOpaqueDataURL(canvas));
+      var c = $('bar');
+      if (!c) { toast('No chart available'); return; }
+      downloadDataURL(zoneSlug() + '-domain-bar.png', chartToOpaqueDataURL(c));
     });
 
-    // Narrative: copy text, download txt
+    // Narrative
     $('narrativeCopyBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      copyText(narrativeText(z));
+      copyText(narrativeText(payload.zones[currentZone]));
     });
-
     $('narrativeDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      var text = narrativeText(z);
-      var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      var blob = new Blob([narrativeText(payload.zones[currentZone])], {type:'text/plain;charset=utf-8'});
       downloadBlob(zoneSlug() + '-narrative.txt', blob);
     });
 
-    // Table: copy TSV, download CSV
+    // Table
     $('tableCopyBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      copyText(tableTsv(z));
+      copyText(tableTsv(payload.zones[currentZone]));
     });
-
     $('tableDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
-      var z = payload.zones[currentZone];
-      var csv = tableCsv(z);
-      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      var blob = new Blob([tableCsv(payload.zones[currentZone])], {type:'text/csv;charset=utf-8'});
       downloadBlob(zoneSlug() + '-crosstab.csv', blob);
-    });
-
-    // Zone screenshot
-    $('screenshotBtn').addEventListener('click', function() {
-      if (!requireData()) return;
-      if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
-      var btn = $('screenshotBtn');
-      var origText = btn.innerHTML;
-      btn.disabled = true;
-      btn.textContent = 'Rendering…';
-      var el = $('insights');
-      var filename = zoneSlug() + '-dashboard.png';
-      html2canvas(el, { backgroundColor: '#0a0806', scale: 2, useCORS: true }).then(function(canvas) {
-        downloadDataURL(filename, canvas.toDataURL('image/png'));
-      }).catch(function() {
-        toast('Screenshot failed');
-      }).finally(function() {
-        btn.disabled = false;
-        btn.innerHTML = origText;
-      });
     });
   }
 
-  // ── Init ───────────────────────────────────────────────────────────────────
+  // ── Export menu items ─────────────────────────────────────────────────────
+  function setupExportMenu() {
+    elExportBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleExportMenu();
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!elExportBtn.contains(e.target) && !elExportMenu.contains(e.target)) {
+        closeExportMenu();
+      }
+    });
+
+    // PowerPoint
+    $('exportPpt').addEventListener('click', function() {
+      closeExportMenu();
+      if (!requireData()) return;
+      toast('Building deck…');
+      window.location = '/api/ppt';
+    });
+
+    // Zone image (PNG)
+    $('exportImg').addEventListener('click', function() {
+      closeExportMenu();
+      if (!requireData()) return;
+      if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
+      var el = $('insights');
+      var filename = zoneSlug() + '-dashboard.png';
+      html2canvas(el, { backgroundColor: '#1b1a19', scale: 2, useCORS: true }).then(function(c) {
+        downloadDataURL(filename, c.toDataURL('image/png'));
+      }).catch(function(){ toast('Screenshot failed'); });
+    });
+
+    // Crosstab CSV
+    $('exportCsv').addEventListener('click', function() {
+      closeExportMenu();
+      if (!requireData()) return;
+      var blob = new Blob([tableCsv(payload.zones[currentZone])], {type:'text/csv;charset=utf-8'});
+      downloadBlob(zoneSlug() + '-crosstab.csv', blob);
+    });
+  }
+
+  // ── Settings modal wiring ─────────────────────────────────────────────────
+  function setupSettings() {
+    $('settingsBtn').addEventListener('click', function() {
+      loadConfigIntoModal();
+      openSettings();
+    });
+
+    $('banner-open').addEventListener('click', function() {
+      loadConfigIntoModal();
+      openSettings();
+    });
+
+    $('banner-dismiss').addEventListener('click', function() {
+      elBanner.classList.add('hidden');
+    });
+
+    $('settingsClose').addEventListener('click', closeSettings);
+
+    elScrim.addEventListener('click', function(e) {
+      if (e.target === elScrim) closeSettings();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && elScrim.classList.contains('open')) closeSettings();
+    });
+
+    $('cfgMode').addEventListener('change', updateScheduleVisibility);
+
+    $('cfgTest').addEventListener('click', doTestConnection);
+
+    $('cfgSave').addEventListener('click', doSave);
+  }
+
+  // ── Page init ─────────────────────────────────────────────────────────────
   function init() {
-    buildZoneFilter();
+    buildZoneTabs();
     showEmpty();
-    setStatus('Idle', '');
+    setStatus('', '');
 
-    elFetchBtn.addEventListener('click', doFetch);
+    elRefreshBtn.addEventListener('click', doRefresh);
 
-    setupExportHandlers();
+    setupTileHandlers();
+    setupExportMenu();
+    setupSettings();
 
-    loadCached();
+    // On load: GET /api/config (banner, never fill secret)
+    fetch('/api/config').then(function(r){ return r.json(); }).then(function(cfg) {
+      updateBanner(cfg);
+    }).catch(function(){});
+
+    // On load: GET /api/status (reflect in-progress/last run)
+    fetch('/api/status').then(function(r){ return r.json(); }).then(function(j) {
+      applyStatusResult(j, false);
+      if (j.state === 'running') {
+        pollTimer = setTimeout(pollStatus, 2000);
+      }
+    }).catch(function(){});
+
+    // On load: GET /api/data (render cache if present)
+    fetch('/api/data').then(function(r){ return r.json(); }).then(function(j) {
+      if (!j.empty) {
+        applyPayload(j);
+        if (j.source === 'cache' || j.generated_at) {
+          lastRunSeen = j.generated_at || null;
+        }
+      } else {
+        showEmpty();
+      }
+    }).catch(function(){ showEmpty(); });
+
+    // Slow cadence poll (~30s) for scheduled auto-refresh
+    slowTimer = setInterval(slowPoll, 30000);
   }
 
   init();
