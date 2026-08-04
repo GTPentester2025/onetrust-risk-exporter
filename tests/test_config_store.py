@@ -37,3 +37,22 @@ def test_is_configured():
     base = {"hostname": "h", "client_id": "c", "client_secret": "s"}
     assert cs.is_configured(base) is True
     assert cs.is_configured({**base, "client_secret": ""}) is False
+
+def test_default_config_not_mutated(tmp_path):
+    cfg = cs.load_config(str(tmp_path / "nope.json"))
+    cfg["schedule"]["mode"] = "daily"
+    assert cs.DEFAULT_CONFIG["schedule"]["mode"] == "off"
+
+def test_save_overwrites_secret_persisted_to_disk(tmp_path):
+    p = str(tmp_path / "config.json")
+    existing = {"hostname": "h", "client_id": "c", "client_secret": "OLD",
+                "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}}
+    merged = cs.save_config(p, {"client_secret": "NEW"}, existing)
+    assert merged["client_secret"] == "NEW"
+    assert json.loads(open(p, encoding="utf-8").read())["client_secret"] == "NEW"
+
+def test_is_configured_all_fields():
+    base = {"hostname": "h", "client_id": "c", "client_secret": "s"}
+    assert cs.is_configured({**base, "hostname": ""}) is False
+    assert cs.is_configured({**base, "client_id": ""}) is False
+    assert cs.is_configured(base) is True

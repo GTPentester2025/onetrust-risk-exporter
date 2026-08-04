@@ -43,8 +43,8 @@ def save_config(path, incoming, existing):
 
 
 def mask_config(cfg):
-    m = {k: v for k, v in cfg.items() if k != "client_secret"}
-    m["has_secret"] = bool(cfg.get("client_secret"))
+    m = copy.deepcopy({k: v for k, v in cfg.items() if k != "client_secret"})
+    m["has_secret"] = bool((cfg.get("client_secret") or "").strip())
     return m
 
 
