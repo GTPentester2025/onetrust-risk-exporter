@@ -5,12 +5,15 @@ import datetime
 import json
 import subprocess
 import sys
+import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from zone_reports import stats
 from zone_reports import narrative
+from config_store import load_config, save_config, mask_config, is_configured, next_run_due
+from onetrust_view_export import get_token
 
 HERE = Path(__file__).resolve().parent
 
@@ -74,15 +77,76 @@ def _run_step(cmd, runner):
         raise RuntimeError(msg)
 
 
-def run_fetch(body, *, runner=subprocess.run, py=sys.executable):
-    for field in ("view", "hostname", "client_id", "client_secret"):
-        if not (body.get(field) or "").strip():
-            raise ValueError(f"Missing {field}")
-    _run_step(export_cmd(body["view"], body["hostname"], body["client_id"],
-                         body["client_secret"], RAW, py), runner)
+CONFIG_FILE = HERE / "config.json"
+VIEW = "TPRM Global View"
+
+_job_lock = threading.Lock()
+JOB = {"state": "idle", "last_run": None, "rows": None, "message": "", "source": None}
+
+
+def reset_job():
+    global JOB
+    JOB = {"state": "idle", "last_run": None, "rows": None, "message": "", "source": None}
+
+
+def do_fetch(cfg, *, runner=subprocess.run, py=sys.executable):
+    if not is_configured(cfg):
+        raise ValueError("Not configured")
+    _run_step(export_cmd(VIEW, cfg["hostname"], cfg["client_id"],
+                         cfg["client_secret"], RAW, py), runner)
     _run_step(refine_cmd(RAW, DATA, CAT_FILE, py), runner)
-    rows = stats.load_rows(DATA)
-    return build_payload(rows, view=body["view"], source="api")
+    return len(stats.load_rows(DATA))
+
+
+def run_fetch_job(*, config_loader=None, runner=subprocess.run,
+                  py=sys.executable, now_fn=None):
+    config_loader = config_loader or (lambda: load_config(str(CONFIG_FILE)))
+    now_fn = now_fn or datetime.datetime.now
+    with _job_lock:
+        if JOB["state"] == "running":
+            return
+        JOB["state"] = "running"; JOB["message"] = ""
+    try:
+        n = do_fetch(config_loader(), runner=runner, py=py)
+        JOB.update(state="done", rows=n, last_run=now_fn(), source="api", message="")
+    except Exception as e:
+        JOB.update(state="error", message=str(e))
+
+
+def start_fetch_async():
+    with _job_lock:
+        if JOB["state"] == "running":
+            return {"started": False, "running": True}
+    t = threading.Thread(target=run_fetch_job, daemon=True)
+    t.start()
+    return {"started": True, "running": False}
+
+
+def scheduler_tick(now, *, config_loader=None):
+    cfg = (config_loader or (lambda: load_config(str(CONFIG_FILE))))()
+    if not is_configured(cfg):
+        return False
+    if next_run_due(cfg.get("schedule", {}), JOB["last_run"], now) and JOB["state"] != "running":
+        return start_fetch_async().get("started", False)
+    return False
+
+
+def _scheduler_loop(stop_event):
+    while not stop_event.wait(30):
+        try:
+            scheduler_tick(datetime.datetime.now())
+        except Exception:
+            pass  # never let the daemon die on a transient error
+
+
+def test_connection(hostname, client_id, client_secret):
+    try:
+        get_token(hostname, client_id, client_secret)
+        return {"ok": True, "message": "Connection OK"}
+    except SystemExit as e:
+        return {"ok": False, "message": str(e)}
+    except Exception as e:
+        return {"ok": False, "message": f"{type(e).__name__}: {e}"}
 
 
 def load_cached():
@@ -126,13 +190,7 @@ def handle_get(path):
 def handle_post(path, body_bytes):
     if path != "/api/fetch":
         return _json_resp({"error": "not found"}, 404)
-    try:
-        body = json.loads(body_bytes or b"{}")
-        return _json_resp(run_fetch(body))
-    except ValueError as e:
-        return _json_resp({"error": str(e)}, 400)
-    except Exception as e:  # RuntimeError, subprocess, decode
-        return _json_resp({"error": str(e)}, 500)
+    return _json_resp(start_fetch_async(), 202)
 
 
 def make_handler():
