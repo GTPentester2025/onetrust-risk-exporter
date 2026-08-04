@@ -179,7 +179,17 @@ def _job_status():
 
 
 def _handle_ppt():
-    return _json_resp({"error": "PPT not available"}, 500)
+    payload = load_cached()
+    if not payload:
+        return _json_resp({"error": "No data — refresh first"}, 400)
+    try:
+        import ppt_export
+        data = ppt_export.deck_to_bytes(payload)
+    except Exception as e:
+        return _json_resp({"error": f"PPT build failed: {e}"}, 500)
+    ctype = ("application/vnd.openxmlformats-officedocument"
+             ".presentationml.presentation")
+    return 200, ctype, data
 
 
 def handle_get(path):
@@ -225,15 +235,21 @@ def handle_post(path, body_bytes):
 
 def make_handler():
     class Handler(BaseHTTPRequestHandler):
-        def _send(self, status, ctype, body):
+        def _send(self, status, ctype, body, extra=None):
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
+            if extra:
+                self.send_header(*extra)
             self.end_headers()
             self.wfile.write(body)
 
         def do_GET(self):
-            self._send(*handle_get(self.path))
+            status, ctype, body = handle_get(self.path)
+            extra = None
+            if self.path == "/api/ppt" and status == 200:
+                extra = ("Content-Disposition", 'attachment; filename="risk-insights.pptx"')
+            self._send(status, ctype, body, extra)
 
         def do_POST(self):
             length = max(0, int(self.headers.get("Content-Length", 0)))
