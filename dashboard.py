@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Local dashboard server for OneTrust zone risk insights."""
+import argparse
 import datetime
 import json
 import subprocess
 import sys
+import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from zone_reports import stats
@@ -94,3 +97,76 @@ def list_views():
         return []
     data = json.loads(VIEWS_FILE.read_text(encoding="utf-8"))
     return [v.get("name", "") for v in data.get("views", []) if v.get("name")]
+
+
+INDEX = HERE / "index.html"
+
+
+def _json_resp(obj, status=200):
+    return status, "application/json; charset=utf-8", json.dumps(obj).encode("utf-8")
+
+
+def handle_get(path):
+    if path == "/" or path == "/index.html":
+        return 200, "text/html; charset=utf-8", INDEX.read_bytes()
+    if path == "/api/views":
+        return _json_resp({"views": list_views()})
+    if path == "/api/data":
+        payload = load_cached()
+        return _json_resp(payload if payload else {"empty": True})
+    return _json_resp({"error": "not found"}, 404)
+
+
+def handle_post(path, body_bytes):
+    if path != "/api/fetch":
+        return _json_resp({"error": "not found"}, 404)
+    try:
+        body = json.loads(body_bytes or b"{}")
+        return _json_resp(run_fetch(body))
+    except ValueError as e:
+        return _json_resp({"error": str(e)}, 400)
+    except Exception as e:  # RuntimeError, subprocess, decode
+        return _json_resp({"error": str(e)}, 500)
+
+
+def make_handler():
+    class Handler(BaseHTTPRequestHandler):
+        def _send(self, status, ctype, body):
+            self.send_response(status)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            self._send(*handle_get(self.path))
+
+        def do_POST(self):
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length) if length else b""
+            self._send(*handle_post(self.path, body))
+
+        def log_message(self, *a):
+            pass  # silence; never log request bodies (may hold secrets)
+    return Handler
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="OneTrust risk insights dashboard.")
+    ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--no-browser", action="store_true")
+    args = ap.parse_args(argv)
+    url = f"http://127.0.0.1:{args.port}/"
+    server = HTTPServer(("127.0.0.1", args.port), make_handler())
+    print(f"Dashboard at {url}  (Ctrl-C to stop)")
+    if not args.no_browser:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopped.")
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()

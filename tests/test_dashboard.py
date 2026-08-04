@@ -1,6 +1,7 @@
 import datetime
 import subprocess
 import pytest
+import json as _json
 from dashboard import build_payload
 import dashboard
 
@@ -61,3 +62,41 @@ def test_run_fetch_reports_step_failure():
                              "client_id": "c", "client_secret": "s"},
                             runner=fake_runner)
     assert "403" in str(e.value)
+
+
+def test_handle_get_views(monkeypatch):
+    monkeypatch.setattr(dashboard, "list_views", lambda: ["A", "B"])
+    status, ctype, body = dashboard.handle_get("/api/views")
+    assert status == 200
+    assert "application/json" in ctype
+    assert _json.loads(body)["views"] == ["A", "B"]
+
+
+def test_handle_get_data_empty(monkeypatch):
+    monkeypatch.setattr(dashboard, "load_cached", lambda: None)
+    status, _c, body = dashboard.handle_get("/api/data")
+    assert status == 200
+    assert _json.loads(body)["empty"] is True
+
+
+def test_handle_get_root_serves_html():
+    status, ctype, body = dashboard.handle_get("/")
+    assert status == 200
+    assert "text/html" in ctype
+    assert b"<!DOCTYPE html>" in body or b"<!doctype html>" in body
+
+
+def test_handle_post_fetch_bad_request(monkeypatch):
+    def boom(b): raise ValueError("Missing view")
+    monkeypatch.setattr(dashboard, "run_fetch", boom)
+    status, _c, body = dashboard.handle_post("/api/fetch", b"{}")
+    assert status == 400
+    assert "Missing view" in _json.loads(body)["error"]
+
+
+def test_handle_post_fetch_error(monkeypatch):
+    def boom(b): raise RuntimeError("403 Forbidden")
+    monkeypatch.setattr(dashboard, "run_fetch", boom)
+    status, _c, body = dashboard.handle_post("/api/fetch", b'{"view":"V"}')
+    assert status == 500
+    assert "403" in _json.loads(body)["error"]
