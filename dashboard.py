@@ -45,8 +45,8 @@ def build_payload(rows, view=None, generated_at=None, source=None):
     return payload
 
 
-RAW = "raw_export.csv"
-DATA = "refined.csv"
+RAW = str(HERE / "raw_export.csv")
+DATA = str(HERE / "refined.csv")
 CAT_FILE = "Supplier_Category_List.xlsx"
 VIEWS_FILE = HERE / "views.json"
 
@@ -67,7 +67,7 @@ def _run_step(cmd, runner):
     r = runner(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         tail = (r.stderr or r.stdout or "").strip().splitlines()
-        msg = tail[-1] if tail else f"exit {r.returncode}"
+        msg = "\n".join(tail[-5:]) if tail else f"exit {r.returncode}"
         raise RuntimeError(msg)
 
 
