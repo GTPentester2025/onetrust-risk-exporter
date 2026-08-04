@@ -1,3 +1,1217 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Risk Insights</title></head>
-<body><div id="app">Loading…</div></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Risk Insights Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --color-primary: #1E40AF;
+      --color-on-primary: #FFFFFF;
+      --color-secondary: #3B82F6;
+      --color-accent: #D97706;
+      --color-background: #F8FAFC;
+      --color-foreground: #1E3A8A;
+      --color-muted: #E9EEF6;
+      --color-border: #DBEAFE;
+      --color-destructive: #DC2626;
+      --color-ring: #1E40AF;
+      --color-surface: #FFFFFF;
+      --color-text: #0F172A;
+      --color-text-muted: #475569;
+      --color-status-idle-bg: #E9EEF6;
+      --color-status-idle-fg: #475569;
+      --color-status-fetching-bg: #FEF3C7;
+      --color-status-fetching-fg: #92400E;
+      --color-status-loaded-bg: #D1FAE5;
+      --color-status-loaded-fg: #065F46;
+      --color-status-error-bg: #FEE2E2;
+      --color-status-error-fg: #991B1B;
+      --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+      --radius: 6px;
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 20px;
+      --sp-6: 24px;
+      --font-sans: 'Fira Sans', system-ui, sans-serif;
+      --font-mono: 'Fira Code', ui-monospace, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-primary: #3B82F6;
+        --color-on-primary: #FFFFFF;
+        --color-secondary: #60A5FA;
+        --color-accent: #F59E0B;
+        --color-background: #0B1220;
+        --color-foreground: #E2E8F0;
+        --color-muted: #1A2540;
+        --color-border: #24324A;
+        --color-destructive: #F87171;
+        --color-ring: #3B82F6;
+        --color-surface: #111A2E;
+        --color-text: #E2E8F0;
+        --color-text-muted: #94A3B8;
+        --color-status-idle-bg: #1E293B;
+        --color-status-idle-fg: #94A3B8;
+        --color-status-fetching-bg: #44300A;
+        --color-status-fetching-fg: #FCD34D;
+        --color-status-loaded-bg: #064E3B;
+        --color-status-loaded-fg: #6EE7B7;
+        --color-status-error-bg: #450A0A;
+        --color-status-error-fg: #FCA5A5;
+        --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+      }
+    }
+
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 14px; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-background);
+      color: var(--color-text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Focus visible ── */
+    :focus-visible {
+      outline: 2px solid var(--color-ring);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* ── Header bar ── */
+    #header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: var(--shadow-card);
+      padding: var(--sp-3) var(--sp-6);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    #app-title {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--color-primary);
+      white-space: nowrap;
+      letter-spacing: -0.02em;
+      margin-right: var(--sp-2);
+      flex-shrink: 0;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .input-group label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .input-group input,
+    .input-group select {
+      height: 36px;
+      padding: 0 var(--sp-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-background);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      transition: border-color 150ms, box-shadow 150ms;
+    }
+
+    .input-group input:hover,
+    .input-group select:hover {
+      border-color: var(--color-secondary);
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgb(59 130 246 / 0.2);
+      outline: none;
+    }
+
+    #fetchBtn {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: 0 var(--sp-5);
+      height: 44px;
+      min-width: 100px;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 150ms, transform 100ms, box-shadow 150ms;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    #fetchBtn:hover:not(:disabled) {
+      background: var(--color-secondary);
+      box-shadow: 0 2px 8px rgb(30 64 175 / 0.25);
+    }
+
+    #fetchBtn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    #fetchBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation: none; opacity: 0.7; }
+      * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+    }
+
+    /* ── Status pill ── */
+    #status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: 4px var(--sp-3);
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      white-space: nowrap;
+      max-width: 420px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: var(--color-status-idle-bg);
+      color: var(--color-status-idle-fg);
+      transition: background 200ms, color 200ms;
+    }
+
+    #status.fetching {
+      background: var(--color-status-fetching-bg);
+      color: var(--color-status-fetching-fg);
+    }
+
+    #status.loaded {
+      background: var(--color-status-loaded-bg);
+      color: var(--color-status-loaded-fg);
+    }
+
+    #status.error {
+      background: var(--color-status-error-bg);
+      color: var(--color-status-error-fg);
+    }
+
+    /* ── Main layout ── */
+    #main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: var(--sp-4) var(--sp-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    /* ── Zone filter / tab strip ── */
+    #zones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-4);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+    }
+
+    .zone-btn {
+      height: 36px;
+      padding: 0 var(--sp-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 150ms, color 150ms, border-color 150ms;
+      min-width: 44px;
+      white-space: nowrap;
+    }
+
+    .zone-btn:hover {
+      background: var(--color-muted);
+      color: var(--color-text);
+      border-color: var(--color-secondary);
+    }
+
+    .zone-btn[aria-selected="true"] {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      border-color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    /* ── Empty state ── */
+    #empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-4);
+      padding: 64px var(--sp-6);
+      text-align: center;
+      color: var(--color-text-muted);
+    }
+
+    #empty .empty-icon {
+      opacity: 0.3;
+    }
+
+    #empty h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    #empty p {
+      font-size: 0.9rem;
+      max-width: 360px;
+    }
+
+    /* ── Insights container ── */
+    #insights {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: var(--sp-4);
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted);
+      margin-bottom: var(--sp-3);
+    }
+
+    /* ── KPI cards ── */
+    #kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--sp-3);
+    }
+
+    .kpi-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: var(--sp-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-1);
+    }
+
+    .kpi-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--color-text-muted);
+    }
+
+    .kpi-value {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      line-height: 1.1;
+    }
+
+    .kpi-sub {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    /* ── Chart row ── */
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: var(--sp-4);
+    }
+
+    .chart-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: var(--sp-4);
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+    }
+
+    #pie-container {
+      height: 280px;
+    }
+
+    #bar-container {
+      height: 280px;
+    }
+
+    /* ── Narrative ── */
+    #narrative-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: var(--sp-4);
+    }
+
+    #narrative {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--color-text);
+    }
+
+    .narrative-line {
+      display: block;
+    }
+
+    .narrative-blank {
+      display: block;
+      height: 0.75em;
+    }
+
+    /* ── Table ── */
+    #table-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: var(--sp-4);
+      overflow: hidden;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #table th {
+      background: var(--color-muted);
+      color: var(--color-text);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: var(--sp-2) var(--sp-3);
+      text-align: right;
+      white-space: nowrap;
+      border-bottom: 2px solid var(--color-border);
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      transition: background 150ms;
+    }
+
+    #table th:first-child {
+      text-align: left;
+    }
+
+    #table th:hover {
+      background: var(--color-border);
+    }
+
+    #table th.sort-active {
+      color: var(--color-primary);
+    }
+
+    .sort-indicator {
+      display: inline-block;
+      margin-left: 4px;
+      opacity: 0.5;
+      font-size: 0.65rem;
+    }
+
+    #table th.sort-active .sort-indicator {
+      opacity: 1;
+    }
+
+    #table td {
+      padding: var(--sp-2) var(--sp-3);
+      text-align: right;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+
+    #table td:first-child {
+      text-align: left;
+      font-weight: 500;
+      color: var(--color-foreground);
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #table tr:last-child td {
+      border-bottom: none;
+    }
+
+    #table tbody tr:hover td {
+      background: var(--color-muted);
+    }
+
+    #table td.total-col {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    #table th.total-col {
+      color: var(--color-primary);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      #header {
+        padding: var(--sp-2) var(--sp-3);
+        gap: var(--sp-2);
+      }
+
+      #app-title {
+        font-size: 0.9rem;
+        width: 100%;
+      }
+
+      .input-group {
+        min-width: 100px;
+      }
+
+      #main {
+        padding: var(--sp-3);
+        gap: var(--sp-3);
+      }
+
+      .chart-row {
+        grid-template-columns: 1fr;
+      }
+
+      #kpis {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .input-group {
+        flex: 1 1 calc(50% - var(--sp-2));
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .chart-row {
+        grid-template-columns: 1fr 2.2fr;
+      }
+    }
+
+    /* ── Utility ── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header id="header">
+  <span id="app-title">Risk Insights</span>
+
+  <div class="input-group">
+    <label for="hostname">Hostname</label>
+    <input type="text" id="hostname" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="input-group">
+    <label for="clientId">Client ID</label>
+    <input type="text" id="clientId" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="input-group">
+    <label for="clientSecret">Client Secret</label>
+    <input type="password" id="clientSecret" autocomplete="new-password">
+  </div>
+
+  <div class="input-group" style="max-width:220px;">
+    <label for="view">View</label>
+    <select id="view">
+      <option value="">— loading views —</option>
+    </select>
+  </div>
+
+  <button id="fetchBtn" type="button">
+    <svg id="fetchIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    Fetch
+  </button>
+
+  <span id="status" role="status" aria-live="polite" aria-atomic="true">Idle</span>
+</header>
+
+<!-- ── Main ── -->
+<main id="main">
+
+  <!-- Zone filter -->
+  <div id="zones" role="tablist" aria-label="Zone filter"></div>
+
+  <!-- Empty state -->
+  <div id="empty" role="status">
+    <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+    </svg>
+    <h2>No data loaded</h2>
+    <p>Enter your OneTrust credentials and click <strong>Fetch</strong> to load risk insights.</p>
+  </div>
+
+  <!-- Insights (hidden until data loaded) -->
+  <div id="insights" class="hidden">
+
+    <!-- KPI cards -->
+    <div id="kpis" aria-label="Key metrics"></div>
+
+    <!-- Charts -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="card-title">Risks by Domain</div>
+        <div id="pie-container" class="chart-container">
+          <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="card-title">Domain x Category Breakdown</div>
+        <div id="bar-container" class="chart-container">
+          <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Narrative -->
+    <div id="narrative-card" class="card">
+      <div class="card-title">Narrative Summary</div>
+      <div id="narrative" aria-label="Narrative summary"></div>
+    </div>
+
+    <!-- Crosstab table -->
+    <div id="table-card">
+      <div class="card-title">Crosstab: Domain by Category</div>
+      <div class="table-scroll">
+        <table id="table" aria-label="Risk counts by domain and category">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- #insights -->
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let payload = null;
+  let currentZone = 'Overall';
+  let pieChart = null;
+  let barChart = null;
+  let sortCol = null;       // column index or null
+  let sortAsc = true;
+
+  const ZONE_ORDER = ['GHQ', 'AFR', 'SAZ', 'MAZ', 'NAZ', 'APAC', 'EUR', 'BEES', 'BEES-FT', 'Overall'];
+
+  // ── Chart palette ──────────────────────────────────────────────────────────
+  // Accessible: blues + amber/orange + slate; not red/green only
+  const CAT_COLORS = {
+    'COMMERCIAL': '#1E40AF',  // indigo-800
+    'LOGISTICS':  '#3B82F6',  // blue-500
+    'NCI':        '#06B6D4',  // cyan-500
+    'PACKAGING':  '#8B5CF6',  // violet-500
+    'TECHNOLOGY': '#D97706',  // amber-600
+    'RAU':        '#64748B',  // slate-500
+    'Fees':       '#0EA5E9',  // sky-500
+  };
+
+  const PIE_PALETTE = [
+    '#1E40AF','#3B82F6','#06B6D4','#8B5CF6','#D97706',
+    '#64748B','#0EA5E9','#6366F1','#F59E0B','#475569',
+    '#2563EB','#7C3AED','#0891B2','#9333EA','#1D4ED8',
+  ];
+
+  // ── Elements ───────────────────────────────────────────────────────────────
+  const $  = id => document.getElementById(id);
+  const elStatus    = $('status');
+  const elZones     = $('zones');
+  const elEmpty     = $('empty');
+  const elInsights  = $('insights');
+  const elKpis      = $('kpis');
+  const elNarrative = $('narrative');
+  const elTable     = $('table');
+  const elFetchBtn  = $('fetchBtn');
+  const elFetchIcon = $('fetchIcon');
+
+  // ── Status helpers ─────────────────────────────────────────────────────────
+  function setStatus(text, cls) {
+    elStatus.textContent = text;
+    elStatus.className   = cls || '';
+    if (cls === 'error') {
+      elStatus.setAttribute('role', 'alert');
+    } else {
+      elStatus.setAttribute('role', 'status');
+    }
+  }
+
+  function showSpinner(show) {
+    // Replace icon with spinner while fetching
+    if (show) {
+      elFetchIcon.outerHTML = '<span id="fetchIcon" class="spinner" aria-hidden="true"></span>';
+    } else {
+      const sp = $('fetchIcon');
+      if (sp) {
+        sp.outerHTML = `<svg id="fetchIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>`;
+      }
+    }
+  }
+
+  function fmtGeneratedAt(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch (_) {
+      return iso || '';
+    }
+  }
+
+  // ── Zone filter ────────────────────────────────────────────────────────────
+  function buildZoneFilter() {
+    elZones.innerHTML = '';
+    ZONE_ORDER.forEach(code => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.role = 'tab';
+      btn.className = 'zone-btn';
+      btn.textContent = code;
+      btn.dataset.zone = code;
+      btn.setAttribute('aria-selected', code === currentZone ? 'true' : 'false');
+      btn.addEventListener('click', () => selectZone(code));
+      elZones.appendChild(btn);
+    });
+  }
+
+  function selectZone(code) {
+    currentZone = code;
+    sortCol = null;
+    sortAsc = true;
+    elZones.querySelectorAll('.zone-btn').forEach(btn => {
+      const sel = btn.dataset.zone === code;
+      btn.setAttribute('aria-selected', sel ? 'true' : 'false');
+    });
+    if (payload) render();
+  }
+
+  // ── Show / hide sections ───────────────────────────────────────────────────
+  function showData() {
+    elEmpty.classList.add('hidden');
+    elInsights.classList.remove('hidden');
+  }
+
+  function showEmpty() {
+    elEmpty.classList.remove('hidden');
+    elInsights.classList.add('hidden');
+  }
+
+  // ── Render KPIs ───────────────────────────────────────────────────────────
+  function renderKpis(z) {
+    elKpis.innerHTML = '';
+
+    // 1) Total risks
+    const card1 = makeKpiCard(
+      'Total Risks',
+      z.total === 0 ? '0' : String(z.total),
+      z.total === 0 ? 'No risks identified' : 'across all categories'
+    );
+    elKpis.appendChild(card1);
+
+    // 2) Top 2 domains combined share
+    if (z.total > 0 && z.by_domain && z.by_domain.length >= 1) {
+      const top2 = z.by_domain.slice(0, 2);
+      const top2Names = top2.map(pair => pair[0]);
+      const top2Pct   = top2.reduce((s, pair) => s + (z.domain_pct[pair[0]] || 0), 0);
+      const subtitle   = top2Names.join(' + ');
+      const card2 = makeKpiCard(
+        'Top Domains Combined',
+        top2Pct + '%',
+        subtitle
+      );
+      elKpis.appendChild(card2);
+    } else {
+      elKpis.appendChild(makeKpiCard('Top Domains', '—', 'No domain data'));
+    }
+
+    // 3) Top supplier category (max of by_cat)
+    if (z.total > 0 && z.by_cat && Object.keys(z.by_cat).length > 0) {
+      let topCat = null, topCount = -1;
+      for (const [cat, cnt] of Object.entries(z.by_cat)) {
+        if (cnt > topCount) { topCount = cnt; topCat = cat; }
+      }
+      const card3 = makeKpiCard(
+        'Top Category',
+        topCat || '—',
+        topCat ? `${topCount} risk${topCount !== 1 ? 's' : ''}` : 'No data'
+      );
+      elKpis.appendChild(card3);
+    } else {
+      elKpis.appendChild(makeKpiCard('Top Category', '—', 'No category data'));
+    }
+  }
+
+  function makeKpiCard(label, value, sub) {
+    const card = document.createElement('div');
+    card.className = 'kpi-card';
+    const l = document.createElement('div');
+    l.className = 'kpi-label';
+    l.textContent = label;
+    const v = document.createElement('div');
+    v.className = 'kpi-value';
+    v.textContent = value;
+    const s = document.createElement('div');
+    s.className = 'kpi-sub';
+    s.textContent = sub;
+    card.appendChild(l);
+    card.appendChild(v);
+    card.appendChild(s);
+    return card;
+  }
+
+  // ── Render Pie ─────────────────────────────────────────────────────────────
+  function renderPie(z) {
+    if (pieChart) { pieChart.destroy(); pieChart = null; }
+    const labels = (z.by_domain || []).map(p => p[0]);
+    const data   = (z.by_domain || []).map(p => p[1]);
+    const colors = labels.map((_, i) => PIE_PALETTE[i % PIE_PALETTE.length]);
+    const ctx = $('pie').getContext('2d');
+    pieChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: colors,
+          borderColor: 'var(--color-surface)',
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 8,
+              boxWidth: 12,
+              font: { size: 10, family: "'Fira Sans', system-ui, sans-serif" },
+              color: getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#0F172A',
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx2 => {
+                const total2 = ctx2.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = total2 ? Math.round(100 * ctx2.parsed / total2) : 0;
+                return ` ${ctx2.label}: ${ctx2.parsed} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Render Bar ─────────────────────────────────────────────────────────────
+  function renderBar(z) {
+    if (barChart) { barChart.destroy(); barChart = null; }
+    const domains = (z.by_domain || []).map(p => p[0]);
+    const activeCats = (payload.cat_order || []).filter(cat => cat in (z.by_cat || {}));
+    const datasets = activeCats.map(cat => ({
+      label: cat,
+      data: domains.map(dom => (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0),
+      backgroundColor: CAT_COLORS[cat] || '#94A3B8',
+      borderColor: 'transparent',
+      borderWidth: 0,
+    }));
+    const fgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#0F172A';
+    const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim() || '#475569';
+    const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--color-border').trim() || '#DBEAFE';
+    const ctx = $('bar').getContext('2d');
+    barChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: domains, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true,
+            ticks: {
+              color: mutedColor,
+              font: { size: 9, family: "'Fira Sans', system-ui, sans-serif" },
+              maxRotation: 45,
+            },
+            grid: { color: borderColor },
+          },
+          y: {
+            stacked: true,
+            ticks: {
+              color: mutedColor,
+              font: { size: 10, family: "'Fira Code', monospace" },
+            },
+            grid: { color: borderColor },
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              padding: 8,
+              boxWidth: 12,
+              font: { size: 10, family: "'Fira Sans', system-ui, sans-serif" },
+              color: fgColor,
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            callbacks: {
+              footer: items => {
+                const sum = items.reduce((a, i) => a + i.parsed.y, 0);
+                return `Total: ${sum}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Render Narrative ───────────────────────────────────────────────────────
+  function renderNarrative(z) {
+    elNarrative.innerHTML = '';
+    const lines = z.narrative || [];
+    lines.forEach(line => {
+      if (line === '' || line === null || line === undefined) {
+        const sp = document.createElement('span');
+        sp.className = 'narrative-blank';
+        sp.setAttribute('aria-hidden', 'true');
+        elNarrative.appendChild(sp);
+      } else {
+        const sp = document.createElement('span');
+        sp.className = 'narrative-line';
+        sp.textContent = line;
+        elNarrative.appendChild(sp);
+      }
+    });
+  }
+
+  // ── Render Table ───────────────────────────────────────────────────────────
+  function renderTable(z) {
+    const thead = elTable.tHead;
+    const tbody = elTable.tBodies[0];
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    const activeCats = (payload.cat_order || []).filter(cat => cat in (z.by_cat || {}));
+    // Columns: domain, ...cats, total
+    const cols = ['Domain', ...activeCats, 'Total'];
+
+    // Build header
+    const tr = document.createElement('tr');
+    cols.forEach((col, i) => {
+      const th = document.createElement('th');
+      th.textContent = col;
+      if (col === 'Total') th.classList.add('total-col');
+      // Sort indicator
+      const ind = document.createElement('span');
+      ind.className = 'sort-indicator';
+      ind.setAttribute('aria-hidden', 'true');
+      ind.textContent = ' ↕'; // up-down arrow
+      th.appendChild(ind);
+      th.setAttribute('aria-sort', 'none');
+      th.tabIndex = 0;
+      th.addEventListener('click', () => tableSort(i, z, activeCats));
+      th.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          tableSort(i, z, activeCats);
+        }
+      });
+      if (sortCol === i) {
+        th.classList.add('sort-active');
+        ind.textContent = sortAsc ? ' ↑' : ' ↓';
+        th.setAttribute('aria-sort', sortAsc ? 'ascending' : 'descending');
+      }
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+
+    // Build rows from by_domain order
+    let rows = (z.by_domain || []).map(([dom, domCount]) => {
+      const cells = [dom, ...activeCats.map(cat => (z.crosstab[dom] && z.crosstab[dom][cat]) || 0), domCount];
+      return cells;
+    });
+
+    // Sort if needed
+    if (sortCol !== null) {
+      rows.sort((a, b) => {
+        const av = a[sortCol], bv = b[sortCol];
+        let cmp;
+        if (typeof av === 'number' && typeof bv === 'number') {
+          cmp = av - bv;
+        } else {
+          cmp = String(av).localeCompare(String(bv));
+        }
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+
+    // Render rows
+    rows.forEach(cells => {
+      const row = document.createElement('tr');
+      cells.forEach((val, i) => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        if (i === cells.length - 1) td.classList.add('total-col');
+        row.appendChild(td);
+      });
+      tbody.appendChild(row);
+    });
+  }
+
+  function tableSort(colIdx, z, activeCats) {
+    if (sortCol === colIdx) {
+      sortAsc = !sortAsc;
+    } else {
+      sortCol = colIdx;
+      sortAsc = colIdx === 0; // domain col: asc by default; numeric: desc
+      if (colIdx > 0) sortAsc = false;
+    }
+    renderTable(z);
+  }
+
+  // ── Main render ───────────────────────────────────────────────────────────
+  function render() {
+    if (!payload) return;
+    const z = payload.zones[currentZone];
+    if (!z) return;
+    showData();
+    renderKpis(z);
+    renderPie(z);
+    renderBar(z);
+    renderNarrative(z);
+    renderTable(z);
+  }
+
+  // ── Store payload + set status ─────────────────────────────────────────────
+  function applyPayload(p, source) {
+    payload = p;
+    currentZone = 'Overall';
+    sortCol = null;
+    sortAsc = true;
+    // Update zone filter selection
+    elZones.querySelectorAll('.zone-btn').forEach(btn => {
+      btn.setAttribute('aria-selected', btn.dataset.zone === 'Overall' ? 'true' : 'false');
+    });
+    render();
+    const n    = p.zones && p.zones[currentZone] ? p.zones[currentZone].total : '?';
+    const when = fmtGeneratedAt(p.generated_at);
+    const src  = source || p.source || '';
+    setStatus(`Loaded ${n} risks · ${when} · ${src}`, 'loaded');
+  }
+
+  // ── Fetch views ────────────────────────────────────────────────────────────
+  async function loadViews() {
+    try {
+      const r = await fetch('/api/views');
+      const j = await r.json();
+      const sel = $('view');
+      sel.innerHTML = '';
+      if (j.views && j.views.length > 0) {
+        j.views.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = v;
+          sel.appendChild(opt);
+        });
+      } else {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '— no views found —';
+        sel.appendChild(opt);
+      }
+    } catch (e) {
+      const sel = $('view');
+      sel.innerHTML = '<option value="">— failed to load views —</option>';
+    }
+  }
+
+  // ── Load cached data ───────────────────────────────────────────────────────
+  async function loadCached() {
+    try {
+      const r = await fetch('/api/data');
+      const j = await r.json();
+      if (j.empty) {
+        showEmpty();
+        setStatus('Idle — enter credentials and click Fetch', '');
+      } else {
+        applyPayload(j, j.source || 'cache');
+      }
+    } catch (e) {
+      showEmpty();
+      setStatus('Idle', '');
+    }
+  }
+
+  // ── Fetch button ───────────────────────────────────────────────────────────
+  async function doFetch() {
+    const hostname     = $('hostname').value.trim();
+    const client_id    = $('clientId').value.trim();
+    const client_secret = $('clientSecret').value;
+    const view         = $('view').value;
+
+    elFetchBtn.disabled = true;
+    showSpinner(true);
+    setStatus('Fetching…', 'fetching');
+
+    try {
+      const r = await fetch('/api/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hostname, client_id, client_secret, view }),
+      });
+
+      const j = await r.json();
+
+      if (!r.ok || j.error) {
+        const msg = j.error || `HTTP ${r.status}`;
+        setStatus(`Error: ${msg}`, 'error');
+        return;
+      }
+
+      applyPayload(j, j.source || 'api');
+
+    } catch (e) {
+      setStatus(`Error: ${e.message || 'Network error'}`, 'error');
+    } finally {
+      elFetchBtn.disabled = false;
+      showSpinner(false);
+    }
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  function init() {
+    buildZoneFilter();
+    showEmpty();
+    setStatus('Idle', '');
+
+    elFetchBtn.addEventListener('click', doFetch);
+
+    loadViews();
+    loadCached();
+  }
+
+  init();
+
+}());
+</script>
+</body>
+</html>
