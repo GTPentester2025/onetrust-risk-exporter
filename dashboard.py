@@ -14,7 +14,7 @@ from zone_reports import stats
 from zone_reports import narrative
 import os
 import tempfile
-from config_store import load_config, save_config, mask_config, is_configured, next_run_due, host_hint
+from config_store import load_config, save_config, is_configured, next_run_due, host_hint
 from onetrust_view_export import get_token
 
 HERE = Path(__file__).resolve().parent
@@ -223,6 +223,17 @@ def _json_resp(obj, status=200):
     return status, "application/json; charset=utf-8", json.dumps(obj).encode("utf-8")
 
 
+def _extra_header(path, status):
+    """Return (header_name, header_value) tuple for Content-Disposition, or None."""
+    if status != 200:
+        return None
+    if path == "/api/ppt":
+        return ("Content-Disposition", 'attachment; filename="risk-insights.pptx"')
+    if path == "/api/catfile":
+        return ("Content-Disposition", 'attachment; filename="Supplier_Category_List.xlsx"')
+    return None
+
+
 def _job_status():
     j = JOB
     return {"state": j["state"],
@@ -293,7 +304,8 @@ def handle_post(path, body_bytes):
                 return _json_resp({"error": "File empty or over 2 MB"}, 400)
             try:
                 parsed = json.loads(body_bytes)
-                assert isinstance(parsed.get("views"), list)
+                if not isinstance(parsed.get("views"), list):
+                    raise ValueError("missing views list")
             except Exception:
                 return _json_resp({"error": "Not a valid views.json (needs a 'views' list)"}, 400)
             _atomic_write(VIEWS_FILE, body_bytes)
@@ -323,12 +335,7 @@ def make_handler():
 
         def do_GET(self):
             status, ctype, body = handle_get(self.path)
-            extra = None
-            if self.path == "/api/ppt" and status == 200:
-                extra = ("Content-Disposition", 'attachment; filename="risk-insights.pptx"')
-            if status == 200 and self.path == "/api/catfile":
-                extra = ("Content-Disposition",
-                         'attachment; filename="Supplier_Category_List.xlsx"')
+            extra = _extra_header(self.path, status)
             self._send(status, ctype, body, extra)
 
         def do_POST(self):

@@ -55,7 +55,7 @@ def host_hint(hostname):
         return ""
     head = h[:2] + "…"
     dot = h.find(".")
-    return head + h[dot:] if dot > -1 else head
+    return head + h[dot:] if dot >= 2 else head
 
 
 def is_configured(cfg):

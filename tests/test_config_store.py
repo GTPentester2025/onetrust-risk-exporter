@@ -88,3 +88,19 @@ def test_host_hint():
     assert cs.host_hint("app-de.onetrust.com") == "ap….onetrust.com"
     assert cs.host_hint("") == ""
     assert cs.host_hint("localhost") == "lo…"      # no dot suffix
+
+
+def test_host_hint_dot_edge_cases():
+    """Test host_hint guards against dots at position < 2 in suffix logic."""
+    # Dot at position 0 (starts with dot) -> head is .f, dot 0 < 2, no suffix
+    assert cs.host_hint(".foo.com") == ".f…"
+    # Dot at position 1 (dot after 1st char) -> head is a., dot 1 < 2, no suffix
+    assert cs.host_hint("a.com") == "a.…"
+    # Single char (no dot) -> no suffix
+    assert cs.host_hint("a") == "a…"
+    # Two chars no dot
+    assert cs.host_hint("ab") == "ab…"
+    # Dot at position 2 (exactly >= 2, should include suffix)
+    assert cs.host_hint("ab.com") == "ab….com"
+    # Dot at position 2 (exactly >= 2, should include suffix)
+    assert cs.host_hint("abc.com") == "ab….com"

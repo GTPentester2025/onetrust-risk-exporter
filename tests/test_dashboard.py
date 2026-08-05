@@ -321,3 +321,39 @@ def test_catfile_download(monkeypatch, tmp_path):
     status, ctype, body = dashboard.handle_get("/api/catfile")
     assert status == 200 and body.startswith(b"PK")
     assert "spreadsheetml" in ctype
+
+
+def test_upload_catfile_size_and_empty(monkeypatch, tmp_path):
+    """Test catfile upload validates empty body and size limits."""
+    monkeypatch.setattr(dashboard, "CAT_FILE", str(tmp_path / "cat.xlsx"))
+    monkeypatch.setattr(dashboard, "VIEWS_FILE", tmp_path / "views.json")
+    # Empty body -> 400
+    status, _c, body = dashboard.handle_post("/api/upload/catfile", b"")
+    assert status == 400
+    assert "empty" in _json.loads(body)["error"].lower()
+    # Over 10 MB -> 400
+    oversized = b"PK" + b"0" * (10 * 1024 * 1024)
+    status, _c, body = dashboard.handle_post("/api/upload/catfile", oversized)
+    assert status == 400
+    assert "10" in _json.loads(body)["error"]
+
+
+def test_catfile_download_disposition(monkeypatch, tmp_path):
+    """Test that /api/catfile GET response includes Content-Disposition attachment header."""
+    monkeypatch.setattr(dashboard, "CAT_FILE", str(tmp_path / "cat.xlsx"))
+    # Verify _extra_header logic for /api/catfile at 200
+    extra = dashboard._extra_header("/api/catfile", 200)
+    assert extra is not None
+    assert extra[0] == "Content-Disposition"
+    assert "attachment" in extra[1]
+    assert "Supplier_Category_List.xlsx" in extra[1]
+    # Verify it returns None for 404
+    extra_404 = dashboard._extra_header("/api/catfile", 404)
+    assert extra_404 is None
+    # Verify /api/ppt also gets disposition at 200
+    extra_ppt = dashboard._extra_header("/api/ppt", 200)
+    assert extra_ppt is not None
+    assert "risk-insights.pptx" in extra_ppt[1]
+    # Verify other paths return None
+    extra_other = dashboard._extra_header("/api/config", 200)
+    assert extra_other is None
