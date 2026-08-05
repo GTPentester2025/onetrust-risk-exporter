@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     /* ── Design tokens (Power BI dark, single theme) ── */
@@ -471,40 +472,119 @@
     #pie-container { height: 280px; }
     #bar-container { height: 280px; }
 
-    /* ── Narrative ── */
+    /* ── Narrative (export text; tile is #narrative-panel = Key Insights) ── */
     #narrative {
       font-size: 0.87rem;
       line-height: 1.65;
       color: var(--fg-muted);
     }
 
-    .narrative-line { display: block; }
+    /* ── Key Insights panel ── */
+    .ki-headline {
+      font-size: 0.95rem;
+      color: var(--fg-muted);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
 
-    .narrative-line.domain-line {
-      color: var(--gold-deep);
-      font-weight: 600;
+    .ki-num {
+      font-family: var(--mono);
+      color: var(--gold);
+      font-size: 1.2em;
+      font-weight: 700;
+    }
+
+    .ki-concentration {
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+      margin-bottom: 12px;
+    }
+
+    #ki-domains {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
       margin-top: 4px;
     }
 
-    .narrative-blank {
-      display: block;
-      height: 0.75em;
+    .ki-domain-card {
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .ki-domain-name {
+      font-weight: 600;
+      color: var(--gold);
+      font-size: 0.87rem;
+    }
+
+    .ki-domain-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ki-pct-badge {
+      display: inline-block;
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    .ki-count {
+      font-size: 0.78rem;
+      color: var(--fg-dim);
+    }
+
+    .ki-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .ki-chip {
+      display: inline-block;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 0.72rem;
+      color: var(--fg-muted);
+      white-space: nowrap;
+    }
+
+    .ki-zero {
+      font-size: 0.87rem;
+      color: var(--fg-dim);
+      font-style: italic;
     }
 
     /* ── Table ── */
     .table-scroll {
-      overflow-x: auto;
+      overflow: auto;
+      max-height: 420px;
       -webkit-overflow-scrolling: touch;
     }
 
     #table {
-      width: 100%;
+      min-width: max-content;
       border-collapse: collapse;
       font-size: 0.81rem;
       font-variant-numeric: tabular-nums;
     }
 
     #table thead { position: sticky; top: 0; z-index: 2; }
+    #table thead th { position: sticky; top: 0; z-index: 2; background: var(--tile-2); }
 
     #table th {
       background: var(--tile-2);
@@ -562,15 +642,15 @@
     #table td.total-col { font-family: var(--mono); font-weight: 700; color: var(--gold); }
     #table th.total-col { color: var(--gold); }
 
-    /* ── Table+Narrative split row ── */
+    /* ── Table row (full-width, narrative moved above) ── */
     .data-row {
       display: grid;
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: 1fr;
       gap: 14px;
     }
 
-    /* ── Table panel: allow sticky thead ── */
-    #table-panel { overflow: visible; }
+    /* ── Table panel: clipped tile, scroll inside .table-scroll ── */
+    #table-panel { overflow: hidden; }
 
     /* ── Zone heading ── */
     #zone-heading {
@@ -727,6 +807,59 @@
 
     #cfgTestResult.ok { color: var(--live); }
     #cfgTestResult.fail { color: var(--danger); }
+
+    /* ── Connection status row ── */
+    #connStatusRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+
+    #connStatusRow .conn-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live);
+      flex-shrink: 0;
+    }
+
+    #connStatusRow .conn-label {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+    }
+
+    /* ── Data files section ── */
+    .files-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      flex-wrap: wrap;
+    }
+
+    .files-status {
+      flex: 1;
+      font-size: 0.83rem;
+      color: var(--fg-muted);
+    }
+
+    .files-status.present {
+      color: var(--live);
+    }
+
+    .files-status.absent {
+      color: var(--fg-dim);
+    }
+
+    #filesMsg {
+      font-size: 0.78rem;
+      color: var(--danger);
+      min-height: 1em;
+      padding: 2px 0;
+    }
 
     #settings-footer {
       display: flex;
@@ -1014,7 +1147,31 @@
       </div>
     </div>
 
-    <!-- Table + Narrative row -->
+    <!-- Key Insights tile (full-width, above table) -->
+    <div class="tile" id="narrative-panel">
+      <div class="tile-header">
+        <div class="tile-title">Key Insights</div>
+        <div class="tile-toolbar">
+          <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="tile-body">
+        <div id="narrative" aria-label="Key insights" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- Table row -->
     <div class="data-row">
       <!-- Table tile -->
       <div class="tile" id="table-panel">
@@ -1044,30 +1201,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Narrative tile -->
-      <div class="tile" id="narrative-panel">
-        <div class="tile-header">
-          <div class="tile-title">Narrative Summary</div>
-          <div class="tile-toolbar">
-            <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-            <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="tile-body">
-          <div id="narrative" aria-label="Narrative summary"></div>
-        </div>
-      </div>
     </div>
 
   </div><!-- #insights -->
@@ -1088,25 +1221,57 @@
     <div id="settings-body">
       <div class="modal-section-label">Connection</div>
 
-      <div class="field-group">
-        <label for="cfgHost">Hostname</label>
-        <input type="text" id="cfgHost" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
+      <!-- Configured status row (shown when configured=true, Edit mode hidden) -->
+      <div id="connStatusRow" class="hidden">
+        <span class="conn-dot" aria-hidden="true"></span>
+        <span class="conn-label" id="connStatusLabel">Configured</span>
+        <button class="modal-btn" id="connEditBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Edit</button>
       </div>
 
-      <div class="field-group">
-        <label for="cfgId">Client ID</label>
-        <input type="text" id="cfgId" autocomplete="off" spellcheck="false">
+      <!-- Edit wrap: inputs + Test (always shown when not configured; hidden behind status row when configured) -->
+      <div id="connEditWrap">
+        <div class="field-group" style="margin-bottom:8px">
+          <label for="cfgHost">Hostname</label>
+          <input type="text" id="cfgHost" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="field-group" style="margin-bottom:8px">
+          <label for="cfgId">Client ID</label>
+          <input type="text" id="cfgId" placeholder="client id" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="field-group" style="margin-bottom:8px">
+          <label for="cfgSecret">Client Secret</label>
+          <input type="password" id="cfgSecret" autocomplete="new-password">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button class="modal-btn" id="cfgTest" type="button">Test Connection</button>
+          <button class="modal-btn hidden" id="connCancelBtn" type="button" style="border:1px solid var(--border);background:var(--tile-2);color:var(--fg-muted);">Cancel</button>
+          <span id="cfgTestResult" aria-live="polite"></span>
+        </div>
       </div>
 
-      <div class="field-group">
-        <label for="cfgSecret">Client Secret</label>
-        <input type="password" id="cfgSecret" autocomplete="new-password">
-      </div>
+      <div class="modal-section-label" style="margin-top:8px">Data files</div>
 
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <button class="modal-btn" id="cfgTest" type="button">Test Connection</button>
-        <span id="cfgTestResult" aria-live="polite"></span>
+      <!-- Supplier categories row -->
+      <div class="files-row">
+        <span id="catStatus" class="files-status absent">Not uploaded</span>
+        <input type="file" id="catFileInput" accept=".xlsx" style="display:none" aria-label="Upload supplier categories xlsx">
+        <button class="modal-btn" id="catUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Upload</button>
+        <button class="modal-btn hidden" id="catDownloadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;border:1px solid var(--border);background:var(--tile-2);color:var(--fg-muted);">Download</button>
       </div>
+      <div style="font-size:0.7rem;color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Supplier categories (.xlsx)</div>
+
+      <!-- Views config row -->
+      <div class="files-row">
+        <span id="viewsStatus" class="files-status absent">Not uploaded</span>
+        <input type="file" id="viewsFileInput" accept=".json,application/json" style="display:none" aria-label="Upload views config json">
+        <button class="modal-btn" id="viewsUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Upload</button>
+      </div>
+      <div style="font-size:0.7rem;color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Views config (.json)</div>
+
+      <div id="filesMsg" aria-live="polite"></div>
 
       <div class="modal-section-label" style="margin-top:4px">Schedule</div>
 
@@ -1155,21 +1320,17 @@
   var ZONE_ORDER = ['GHQ', 'AFR', 'SAZ', 'MAZ', 'NAZ', 'APAC', 'EUR', 'BEES', 'BEES-FT', 'Overall'];
 
   // ── Chart palettes ─────────────────────────────────────────────────────────
-  var CAT_COLORS = {
-    'COMMERCIAL': '#e8c810',
-    'LOGISTICS':  '#c99a1e',
-    'NCI':        '#f5da3a',
-    'PACKAGING':  '#a89572',
-    'TECHNOLOGY': '#c8c6c4',
-    'RAU':        '#797775',
-    'Fees':       '#3b3a39',
-  };
-
-  var PIE_PALETTE = [
-    '#e8c810','#c99a1e','#f5da3a','#a89572','#c8c6c4',
-    '#797775','#5a4e3a','#3b3a39','#d4a820','#b8922a',
-    '#f0d060','#9a8060','#7a6040','#e0b830','#c0a020',
+  var PALETTE = [
+    '#E8C810','#4FC3F7','#F0736A','#34D399','#CE93D8','#FFB74D',
+    '#90CAF9','#F48FB1','#AED581','#FFD54F','#4DD0E1','#BCAAA4'
   ];
+
+  function seriesColor(i, cat) {
+    return cat === '(blank)' ? '#797775' : PALETTE[i % PALETTE.length];
+  }
+
+  // Register datalabels plugin
+  Chart.register(ChartDataLabels);
 
   // ── Element shortcuts ──────────────────────────────────────────────────────
   var $ = function(id) { return document.getElementById(id); };
@@ -1393,7 +1554,7 @@
     if (pieChart) { pieChart.destroy(); pieChart = null; }
     var labels = (z.by_domain || []).map(function(p) { return p[0]; });
     var data   = (z.by_domain || []).map(function(p) { return p[1]; });
-    var colors = labels.map(function(_, i) { return PIE_PALETTE[i % PIE_PALETTE.length]; });
+    var colors = labels.map(function(_, i) { return seriesColor(i); });
     var ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
       type: 'pie',
@@ -1405,7 +1566,17 @@
           tooltip: { callbacks: { label: function(c) {
             var tot = c.dataset.data.reduce(function(a,b){return a+b;},0);
             return ' '+c.label+': '+c.parsed+' ('+(tot?Math.round(100*c.parsed/tot):0)+'%)';
-          }}}
+          }}},
+          datalabels: {
+            anchor: 'center',
+            color: '#1b1a19',
+            font: { weight: '700', size: 11 },
+            formatter: function(value, ctx) {
+              var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+              var pct = total ? Math.round(100 * value / total) : 0;
+              return pct >= 5 ? pct + '%' : '';
+            }
+          }
         }
       }
     });
@@ -1422,11 +1593,19 @@
     if (barChart) { barChart.destroy(); barChart = null; }
     var domains = (z.by_domain || []).map(function(p) { return p[0]; });
     var activeCats = activeCatsFor(z);
-    var datasets = activeCats.map(function(cat) {
+    // Compute column totals (max total for threshold calculation)
+    var colTotals = domains.map(function(dom) {
+      return (z.by_domain || []).reduce(function(acc, p) {
+        return p[0] === dom ? p[1] : acc;
+      }, 0);
+    });
+    var maxTotal = colTotals.reduce(function(a, b) { return Math.max(a, b); }, 1);
+
+    var datasets = activeCats.map(function(cat, catIdx) {
       return {
         label: catLabel(cat),
         data: domains.map(function(dom) { return (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0; }),
-        backgroundColor: CAT_COLORS[cat] || '#797775',
+        backgroundColor: seriesColor(catIdx, cat),
         borderColor: 'transparent', borderWidth: 0
       };
     });
@@ -1442,7 +1621,33 @@
         },
         plugins: {
           legend: { position: 'top', labels: { padding: 8, boxWidth: 11, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
-          tooltip: { mode: 'index', callbacks: { footer: function(items) { return 'Total: '+items.reduce(function(a,i){return a+i.parsed.y;},0); } } }
+          tooltip: {
+            mode: 'index',
+            callbacks: {
+              label: function(item) {
+                var tot = colTotals[item.dataIndex] || 0;
+                return ' ' + item.dataset.label + ': ' + item.parsed.y + ' (of ' + tot + ')';
+              },
+              footer: function(items) { return 'Total: ' + (colTotals[items[0].dataIndex] || 0); }
+            }
+          },
+          datalabels: {
+            labels: {
+              segment: {
+                anchor: 'center', align: 'center',
+                color: '#1b1a19', font: { size: 10, weight: '600' },
+                formatter: function(value, ctx) {
+                  return (value > 0 && maxTotal > 0 && value / maxTotal > 0.06) ? value : '';
+                }
+              },
+              total: {
+                anchor: 'end', align: 'end', offset: -2,
+                color: '#f3f2f1', font: { weight: '700', size: 10 },
+                display: function(ctx) { return ctx.datasetIndex === ctx.chart.data.datasets.length - 1; },
+                formatter: function(value, ctx) { return colTotals[ctx.dataIndex] || ''; }
+              }
+            }
+          }
         }
       }
     });
@@ -1458,22 +1663,84 @@
     return rows.join('\n');
   }
 
-  // ── Narrative rendering ───────────────────────────────────────────────────
+  // ── Narrative rendering (Key Insights structured view) ───────────────────
   function renderNarrative(z) {
     elNarrative.innerHTML = '';
-    (z.narrative || []).forEach(function(line) {
-      if (line === '' || line === null || line === undefined) {
-        var sp = document.createElement('span');
-        sp.className = 'narrative-blank'; sp.setAttribute('aria-hidden','true');
-        elNarrative.appendChild(sp);
-      } else {
-        var sp = document.createElement('span');
-        sp.className = 'narrative-line';
-        if (/^[A-Z][^:]{0,40}:/.test(line)) sp.classList.add('domain-line');
-        sp.textContent = line;
-        elNarrative.appendChild(sp);
+
+    if (!z.total) {
+      var zero = document.createElement('p');
+      zero.className = 'ki-zero';
+      zero.textContent = 'No risks recorded for this zone.';
+      elNarrative.appendChild(zero);
+      return;
+    }
+
+    // Headline
+    var hl = document.createElement('p');
+    hl.className = 'ki-headline';
+    hl.innerHTML = 'A total of <span class="ki-num">' + z.total + '</span> risks identified across business units';
+    elNarrative.appendChild(hl);
+
+    // Concentration line from grand_by_cat desc (>=2 nonzero cats)
+    var gc = (z.grand_by_cat || []).filter(function(p) { return p[1] > 0; });
+    gc.sort(function(a, b) { return b[1] - a[1]; });
+    if (gc.length >= 2) {
+      var n1 = gc[0][1], n2 = gc[1][1];
+      var pct = z.total ? Math.round(100 * (n1 + n2) / z.total) : 0;
+      var conc = document.createElement('p');
+      conc.className = 'ki-concentration';
+      conc.innerHTML = catLabel(gc[0][0]) + ' (' + n1 + ') and ' + catLabel(gc[1][0]) + ' (' + n2 + ') together account for <span class="ki-num">' + pct + '%</span> of total exposure';
+      elNarrative.appendChild(conc);
+    }
+
+    // Domain cards grid
+    var grid = document.createElement('div');
+    grid.id = 'ki-domains';
+    (z.by_domain || []).forEach(function(entry) {
+      var dom = entry[0];
+      var domTotal = entry[1];
+      var domPct = (z.domain_pct && z.domain_pct[dom] != null) ? z.domain_pct[dom] : (z.total ? Math.round(100 * domTotal / z.total) : 0);
+      var topCatsForDom = (z.top_cats && z.top_cats[dom]) || [];
+
+      var card = document.createElement('div');
+      card.className = 'ki-domain-card';
+
+      var nameEl = document.createElement('div');
+      nameEl.className = 'ki-domain-name';
+      nameEl.textContent = dom;
+
+      var topRow = document.createElement('div');
+      topRow.className = 'ki-domain-top';
+
+      var badge = document.createElement('span');
+      badge.className = 'ki-pct-badge';
+      badge.textContent = domPct + '% of total';
+
+      var countEl = document.createElement('span');
+      countEl.className = 'ki-count';
+      countEl.textContent = domTotal + ' risk' + (domTotal !== 1 ? 's' : '');
+
+      topRow.appendChild(badge);
+      topRow.appendChild(countEl);
+
+      card.appendChild(nameEl);
+      card.appendChild(topRow);
+
+      if (topCatsForDom.length > 0) {
+        var chips = document.createElement('div');
+        chips.className = 'ki-chips';
+        topCatsForDom.forEach(function(cp) {
+          var chip = document.createElement('span');
+          chip.className = 'ki-chip';
+          chip.textContent = catLabel(cp[0]) + ' · ' + cp[1];
+          chips.appendChild(chip);
+        });
+        card.appendChild(chips);
       }
+
+      grid.appendChild(card);
     });
+    elNarrative.appendChild(grid);
   }
 
   // ── Table rendering ───────────────────────────────────────────────────────
@@ -1698,7 +1965,7 @@
 
   // ── Banner ────────────────────────────────────────────────────────────────
   function updateBanner(cfg) {
-    if (!cfg.has_secret || !cfg.hostname || !cfg.client_id) {
+    if (!cfg.configured) {
       elBanner.classList.remove('hidden');
     } else {
       elBanner.classList.add('hidden');
@@ -1708,9 +1975,16 @@
   // ── Settings modal ────────────────────────────────────────────────────────
   function openSettings() {
     elScrim.classList.add('open');
-    // Move focus into modal
-    var first = $('cfgHost');
-    if (first) first.focus();
+    refreshFiles();
+    // Move focus into modal: if configured, focus the Edit button; else the host field
+    var connStatus = $('connStatusRow');
+    if (connStatus && !connStatus.classList.contains('hidden')) {
+      var editBtn = $('connEditBtn');
+      if (editBtn) editBtn.focus();
+    } else {
+      var first = $('cfgHost');
+      if (first) first.focus();
+    }
   }
 
   function closeSettings() {
@@ -1721,8 +1995,25 @@
   function loadConfigIntoModal() {
     fetch('/api/config').then(function(r) { return r.json(); }).then(function(cfg) {
       savedHasSecret = !!cfg.has_secret;
-      $('cfgHost').value = cfg.hostname || '';
-      $('cfgId').value = cfg.client_id || '';
+      // Toggle connection view: status row vs edit wrap
+      var statusRow = $('connStatusRow');
+      var editWrap  = $('connEditWrap');
+      var cancelBtn = $('connCancelBtn');
+      if (cfg.configured) {
+        var hint = cfg.host_hint ? 'Configured — ' + cfg.host_hint : 'Configured';
+        $('connStatusLabel').textContent = hint;
+        statusRow.classList.remove('hidden');
+        editWrap.classList.add('hidden');
+        cancelBtn.classList.remove('hidden');  // show Cancel when in edit mode later
+        cancelBtn.classList.add('hidden');     // but start hidden since edit wrap is hidden
+      } else {
+        statusRow.classList.add('hidden');
+        editWrap.classList.remove('hidden');
+        cancelBtn.classList.add('hidden');
+      }
+      // NEVER prefill hostname / client_id
+      $('cfgHost').value = '';
+      $('cfgId').value = '';
       // NEVER prefill secret field
       $('cfgSecret').value = '';
       $('cfgSecret').placeholder = savedHasSecret ? '•••• saved (leave blank to keep)' : 'client secret';
@@ -1762,12 +2053,21 @@
 
   function doSave() {
     var body = {};
-    var host = $('cfgHost').value.trim();
-    var cid  = $('cfgId').value.trim();
-    var sec  = $('cfgSecret').value;
-    body.hostname = host;         // always send (allows clearing a bad hostname)
-    body.client_id = cid;        // always send (allows clearing a bad client_id)
-    if (sec)  body.client_secret = sec;   // only include if non-blank
+    var editWrap = $('connEditWrap');
+    var editActive = editWrap && !editWrap.classList.contains('hidden');
+    if (editActive) {
+      // Only include credentials when the edit form is visible
+      var host = $('cfgHost').value.trim();
+      var cid  = $('cfgId').value.trim();
+      var sec  = $('cfgSecret').value;
+      body.hostname   = host;
+      body.client_id  = cid;
+      if (sec) body.client_secret = sec;
+    } else {
+      // Edit wrap hidden — only save secret if user typed one
+      var sec2 = $('cfgSecret').value;
+      if (sec2) body.client_secret = sec2;
+    }
     var mode = $('cfgMode').value;
     var sched = { mode: mode };
     if (mode === 'daily') sched.time = $('cfgTime').value;
@@ -1781,6 +2081,67 @@
         toast('Settings saved');
       })
       .catch(function(){ toast('Save failed'); });
+  }
+
+  // ── Data files ────────────────────────────────────────────────────────────
+  function refreshFiles() {
+    fetch('/api/files').then(function(r) { return r.json(); }).then(function(f) {
+      var cat   = (f.catfile  || {});
+      var views = (f.views    || {});
+      var catStatus   = $('catStatus');
+      var viewsStatus = $('viewsStatus');
+      var dlBtn       = $('catDownloadBtn');
+
+      if (cat.present) {
+        var sup = cat.suppliers != null ? ' — ' + cat.suppliers + ' suppliers' : '';
+        catStatus.textContent = '● Configured' + sup;
+        catStatus.className = 'files-status present';
+        if (dlBtn) dlBtn.classList.remove('hidden');
+      } else {
+        catStatus.textContent = 'Not uploaded';
+        catStatus.className = 'files-status absent';
+        if (dlBtn) dlBtn.classList.add('hidden');
+      }
+
+      if (views.present) {
+        var vc = views.view_count != null ? ' — ' + views.view_count + ' view(s)' : '';
+        viewsStatus.textContent = '● Configured' + vc;
+        viewsStatus.className = 'files-status present';
+      } else {
+        viewsStatus.textContent = 'Not uploaded';
+        viewsStatus.className = 'files-status absent';
+      }
+    }).catch(function() { /* silently ignore */ });
+  }
+
+  function uploadFile(inputEl, url) {
+    var file = inputEl.files[0];
+    if (!file) return;
+    var filesMsg = $('filesMsg');
+    if (filesMsg) { filesMsg.textContent = ''; }
+    file.arrayBuffer().then(function(buf) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf
+      });
+    }).then(function(r) {
+      if (r.ok) {
+        inputEl.value = '';
+        refreshFiles();
+        toast('Uploaded');
+      } else {
+        return r.json().catch(function() { return {}; }).then(function(j) {
+          var msg = j.error || ('Upload failed (HTTP ' + r.status + ')');
+          if (filesMsg) { filesMsg.textContent = msg; }
+          toast('Upload failed');
+        });
+      }
+    }).catch(function(e) {
+      var msg = e.message || 'Upload error';
+      if (filesMsg) { filesMsg.textContent = msg; }
+      toast('Upload failed');
+    });
   }
 
   // ── Export menu ───────────────────────────────────────────────────────────
@@ -1936,6 +2297,63 @@
     $('cfgTest').addEventListener('click', doTestConnection);
 
     $('cfgSave').addEventListener('click', doSave);
+
+    // Edit / Cancel buttons for connection section
+    $('connEditBtn').addEventListener('click', function() {
+      $('connStatusRow').classList.add('hidden');
+      $('connEditWrap').classList.remove('hidden');
+      $('connCancelBtn').classList.remove('hidden');
+      $('cfgHost').focus();
+    });
+
+    $('connCancelBtn').addEventListener('click', function() {
+      $('connEditWrap').classList.add('hidden');
+      $('connCancelBtn').classList.add('hidden');
+      $('connStatusRow').classList.remove('hidden');
+      $('cfgHost').value = '';
+      $('cfgId').value = '';
+      $('cfgSecret').value = '';
+      $('cfgTestResult').textContent = '';
+      $('cfgTestResult').className = '';
+      $('connEditBtn').focus();
+    });
+
+    // Data file upload buttons
+    $('catUploadBtn').addEventListener('click', function() {
+      $('catFileInput').value = '';
+      $('catFileInput').click();
+    });
+
+    $('catFileInput').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      if (!/\.xlsx$/i.test(file.name)) {
+        toast('Please select a .xlsx file');
+        this.value = '';
+        return;
+      }
+      uploadFile(this, '/api/upload/catfile');
+    });
+
+    $('viewsUploadBtn').addEventListener('click', function() {
+      $('viewsFileInput').value = '';
+      $('viewsFileInput').click();
+    });
+
+    $('viewsFileInput').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      if (!/\.json$/i.test(file.name)) {
+        toast('Please select a .json file');
+        this.value = '';
+        return;
+      }
+      uploadFile(this, '/api/upload/views');
+    });
+
+    $('catDownloadBtn').addEventListener('click', function() {
+      window.location = '/api/catfile';
+    });
   }
 
   // ── Page init ─────────────────────────────────────────────────────────────

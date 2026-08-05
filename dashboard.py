@@ -12,7 +12,9 @@ from pathlib import Path
 
 from zone_reports import stats
 from zone_reports import narrative
-from config_store import load_config, save_config, mask_config, is_configured, next_run_due
+import os
+import tempfile
+from config_store import load_config, save_config, is_configured, next_run_due, host_hint
 from onetrust_view_export import get_token
 
 HERE = Path(__file__).resolve().parent
@@ -53,7 +55,7 @@ def build_payload(rows, view=None, generated_at=None, source=None):
 
 RAW = str(HERE / "raw_export.csv")
 DATA = str(HERE / "refined.csv")
-CAT_FILE = "Supplier_Category_List.xlsx"
+CAT_FILE = str(HERE / "Supplier_Category_List.xlsx")
 VIEWS_FILE = HERE / "views.json"
 
 
@@ -164,11 +166,72 @@ def list_views():
         return []
 
 
+def strict_mask(cfg):
+    return {"configured": is_configured(cfg),
+            "host_hint": host_hint(cfg.get("hostname")),
+            "has_secret": bool((cfg.get("client_secret") or "").strip()),
+            "schedule": dict(cfg.get("schedule") or {})}
+
+
+def _count_views():
+    try:
+        data = json.loads(Path(VIEWS_FILE).read_text(encoding="utf-8"))
+        return len(data.get("views", []))
+    except Exception:
+        return None
+
+
+def _count_suppliers():
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(CAT_FILE, read_only=True)
+        n = max(0, (wb.active.max_row or 1) - 1)
+        wb.close()
+        return n
+    except Exception:
+        return None
+
+
+def files_status():
+    cat_present = Path(CAT_FILE).exists()
+    views_present = Path(VIEWS_FILE).exists()
+    return {"catfile": {"present": cat_present,
+                        "suppliers": _count_suppliers() if cat_present else None},
+            "views": {"present": views_present,
+                      "view_count": _count_views() if views_present else None}}
+
+
+def _atomic_write(target, data):
+    d = os.path.dirname(str(target)) or "."
+    fd, tmp = tempfile.mkstemp(dir=d, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.replace(tmp, str(target))
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 INDEX = HERE / "index.html"
 
 
 def _json_resp(obj, status=200):
     return status, "application/json; charset=utf-8", json.dumps(obj).encode("utf-8")
+
+
+def _extra_header(path, status):
+    """Return (header_name, header_value) tuple for Content-Disposition, or None."""
+    if status != 200:
+        return None
+    if path == "/api/ppt":
+        return ("Content-Disposition", 'attachment; filename="risk-insights.pptx"')
+    if path == "/api/catfile":
+        return ("Content-Disposition", 'attachment; filename="Supplier_Category_List.xlsx"')
+    return None
 
 
 def _job_status():
@@ -199,7 +262,15 @@ def handle_get(path):
         except FileNotFoundError:
             return _json_resp({"error": "index.html not found"}, 500)
     if path == "/api/config":
-        return _json_resp(mask_config(load_config(str(CONFIG_FILE))))
+        return _json_resp(strict_mask(load_config(str(CONFIG_FILE))))
+    if path == "/api/files":
+        return _json_resp(files_status())
+    if path == "/api/catfile":
+        if not Path(CAT_FILE).exists():
+            return _json_resp({"error": "No supplier file uploaded"}, 404)
+        ctype = ("application/vnd.openxmlformats-officedocument"
+                 ".spreadsheetml.sheet")
+        return 200, ctype, Path(CAT_FILE).read_bytes()
     if path == "/api/status":
         return _json_resp(_job_status())
     if path == "/api/views":
@@ -220,7 +291,25 @@ def handle_post(path, body_bytes):
         if path == "/api/config":
             body = json.loads(body_bytes or b"{}")
             merged = save_config(str(CONFIG_FILE), body, load_config(str(CONFIG_FILE)))
-            return _json_resp(mask_config(merged))
+            return _json_resp(strict_mask(merged))
+        if path == "/api/upload/catfile":
+            if not body_bytes or len(body_bytes) > 10 * 1024 * 1024:
+                return _json_resp({"error": "File empty or over 10 MB"}, 400)
+            if not body_bytes.startswith(b"PK"):
+                return _json_resp({"error": "Not a valid .xlsx file"}, 400)
+            _atomic_write(CAT_FILE, body_bytes)
+            return _json_resp(files_status())
+        if path == "/api/upload/views":
+            if not body_bytes or len(body_bytes) > 2 * 1024 * 1024:
+                return _json_resp({"error": "File empty or over 2 MB"}, 400)
+            try:
+                parsed = json.loads(body_bytes)
+                if not isinstance(parsed.get("views"), list):
+                    raise ValueError("missing views list")
+            except Exception:
+                return _json_resp({"error": "Not a valid views.json (needs a 'views' list)"}, 400)
+            _atomic_write(VIEWS_FILE, body_bytes)
+            return _json_resp(files_status())
         if path == "/api/config/test":
             body = json.loads(body_bytes or b"{}")
             existing = load_config(str(CONFIG_FILE))
@@ -246,9 +335,7 @@ def make_handler():
 
         def do_GET(self):
             status, ctype, body = handle_get(self.path)
-            extra = None
-            if self.path == "/api/ppt" and status == 200:
-                extra = ("Content-Disposition", 'attachment; filename="risk-insights.pptx"')
+            extra = _extra_header(self.path, status)
             self._send(status, ctype, body, extra)
 
         def do_POST(self):

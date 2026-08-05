@@ -49,6 +49,15 @@ def mask_config(cfg):
     return m
 
 
+def host_hint(hostname):
+    h = (hostname or "").strip()
+    if not h:
+        return ""
+    head = h[:2] + "…"
+    dot = h.find(".")
+    return head + h[dot:] if dot >= 2 else head
+
+
 def is_configured(cfg):
     return all(bool((cfg.get(k) or "").strip())
                for k in ("hostname", "client_id", "client_secret"))

@@ -15,6 +15,7 @@ config.json
 
 # Real view filters (production UUIDs) - keep local only, never on git
 views.json
+Supplier_Category_List.xlsx
 v*_results.txt
 
 # Local tooling / misc
