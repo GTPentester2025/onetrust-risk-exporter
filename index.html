@@ -728,6 +728,59 @@
     #cfgTestResult.ok { color: var(--live); }
     #cfgTestResult.fail { color: var(--danger); }
 
+    /* ── Connection status row ── */
+    #connStatusRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+
+    #connStatusRow .conn-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live);
+      flex-shrink: 0;
+    }
+
+    #connStatusRow .conn-label {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+    }
+
+    /* ── Data files section ── */
+    .files-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      flex-wrap: wrap;
+    }
+
+    .files-status {
+      flex: 1;
+      font-size: 0.83rem;
+      color: var(--fg-muted);
+    }
+
+    .files-status.present {
+      color: var(--live);
+    }
+
+    .files-status.absent {
+      color: var(--fg-dim);
+    }
+
+    #filesMsg {
+      font-size: 0.78rem;
+      color: var(--danger);
+      min-height: 1em;
+      padding: 2px 0;
+    }
+
     #settings-footer {
       display: flex;
       align-items: center;
@@ -1088,25 +1141,57 @@
     <div id="settings-body">
       <div class="modal-section-label">Connection</div>
 
-      <div class="field-group">
-        <label for="cfgHost">Hostname</label>
-        <input type="text" id="cfgHost" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
+      <!-- Configured status row (shown when configured=true, Edit mode hidden) -->
+      <div id="connStatusRow" class="hidden">
+        <span class="conn-dot" aria-hidden="true"></span>
+        <span class="conn-label" id="connStatusLabel">Configured</span>
+        <button class="modal-btn" id="connEditBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Edit</button>
       </div>
 
-      <div class="field-group">
-        <label for="cfgId">Client ID</label>
-        <input type="text" id="cfgId" autocomplete="off" spellcheck="false">
+      <!-- Edit wrap: inputs + Test (always shown when not configured; hidden behind status row when configured) -->
+      <div id="connEditWrap">
+        <div class="field-group" style="margin-bottom:8px">
+          <label for="cfgHost">Hostname</label>
+          <input type="text" id="cfgHost" placeholder="tenant.onetrust.com" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="field-group" style="margin-bottom:8px">
+          <label for="cfgId">Client ID</label>
+          <input type="text" id="cfgId" placeholder="client id" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="field-group" style="margin-bottom:8px">
+          <label for="cfgSecret">Client Secret</label>
+          <input type="password" id="cfgSecret" autocomplete="new-password">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button class="modal-btn" id="cfgTest" type="button">Test Connection</button>
+          <button class="modal-btn hidden" id="connCancelBtn" type="button" style="border:1px solid var(--border);background:var(--tile-2);color:var(--fg-muted);">Cancel</button>
+          <span id="cfgTestResult" aria-live="polite"></span>
+        </div>
       </div>
 
-      <div class="field-group">
-        <label for="cfgSecret">Client Secret</label>
-        <input type="password" id="cfgSecret" autocomplete="new-password">
-      </div>
+      <div class="modal-section-label" style="margin-top:8px">Data files</div>
 
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <button class="modal-btn" id="cfgTest" type="button">Test Connection</button>
-        <span id="cfgTestResult" aria-live="polite"></span>
+      <!-- Supplier categories row -->
+      <div class="files-row">
+        <span id="catStatus" class="files-status absent">Not uploaded</span>
+        <input type="file" id="catFileInput" accept=".xlsx" style="display:none" aria-label="Upload supplier categories xlsx">
+        <button class="modal-btn" id="catUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Upload</button>
+        <button class="modal-btn hidden" id="catDownloadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;border:1px solid var(--border);background:var(--tile-2);color:var(--fg-muted);">Download</button>
       </div>
+      <div style="font-size:0.7rem;color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Supplier categories (.xlsx)</div>
+
+      <!-- Views config row -->
+      <div class="files-row">
+        <span id="viewsStatus" class="files-status absent">Not uploaded</span>
+        <input type="file" id="viewsFileInput" accept=".json,application/json" style="display:none" aria-label="Upload views config json">
+        <button class="modal-btn" id="viewsUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Upload</button>
+      </div>
+      <div style="font-size:0.7rem;color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Views config (.json)</div>
+
+      <div id="filesMsg" aria-live="polite"></div>
 
       <div class="modal-section-label" style="margin-top:4px">Schedule</div>
 
@@ -1698,7 +1783,7 @@
 
   // ── Banner ────────────────────────────────────────────────────────────────
   function updateBanner(cfg) {
-    if (!cfg.has_secret || !cfg.hostname || !cfg.client_id) {
+    if (!cfg.configured) {
       elBanner.classList.remove('hidden');
     } else {
       elBanner.classList.add('hidden');
@@ -1708,9 +1793,16 @@
   // ── Settings modal ────────────────────────────────────────────────────────
   function openSettings() {
     elScrim.classList.add('open');
-    // Move focus into modal
-    var first = $('cfgHost');
-    if (first) first.focus();
+    refreshFiles();
+    // Move focus into modal: if configured, focus the Edit button; else the host field
+    var connStatus = $('connStatusRow');
+    if (connStatus && !connStatus.classList.contains('hidden')) {
+      var editBtn = $('connEditBtn');
+      if (editBtn) editBtn.focus();
+    } else {
+      var first = $('cfgHost');
+      if (first) first.focus();
+    }
   }
 
   function closeSettings() {
@@ -1721,8 +1813,25 @@
   function loadConfigIntoModal() {
     fetch('/api/config').then(function(r) { return r.json(); }).then(function(cfg) {
       savedHasSecret = !!cfg.has_secret;
-      $('cfgHost').value = cfg.hostname || '';
-      $('cfgId').value = cfg.client_id || '';
+      // Toggle connection view: status row vs edit wrap
+      var statusRow = $('connStatusRow');
+      var editWrap  = $('connEditWrap');
+      var cancelBtn = $('connCancelBtn');
+      if (cfg.configured) {
+        var hint = cfg.host_hint ? 'Configured — ' + cfg.host_hint : 'Configured';
+        $('connStatusLabel').textContent = hint;
+        statusRow.classList.remove('hidden');
+        editWrap.classList.add('hidden');
+        cancelBtn.classList.remove('hidden');  // show Cancel when in edit mode later
+        cancelBtn.classList.add('hidden');     // but start hidden since edit wrap is hidden
+      } else {
+        statusRow.classList.add('hidden');
+        editWrap.classList.remove('hidden');
+        cancelBtn.classList.add('hidden');
+      }
+      // NEVER prefill hostname / client_id
+      $('cfgHost').value = '';
+      $('cfgId').value = '';
       // NEVER prefill secret field
       $('cfgSecret').value = '';
       $('cfgSecret').placeholder = savedHasSecret ? '•••• saved (leave blank to keep)' : 'client secret';
@@ -1762,12 +1871,21 @@
 
   function doSave() {
     var body = {};
-    var host = $('cfgHost').value.trim();
-    var cid  = $('cfgId').value.trim();
-    var sec  = $('cfgSecret').value;
-    body.hostname = host;         // always send (allows clearing a bad hostname)
-    body.client_id = cid;        // always send (allows clearing a bad client_id)
-    if (sec)  body.client_secret = sec;   // only include if non-blank
+    var editWrap = $('connEditWrap');
+    var editActive = editWrap && !editWrap.classList.contains('hidden');
+    if (editActive) {
+      // Only include credentials when the edit form is visible
+      var host = $('cfgHost').value.trim();
+      var cid  = $('cfgId').value.trim();
+      var sec  = $('cfgSecret').value;
+      body.hostname   = host;
+      body.client_id  = cid;
+      if (sec) body.client_secret = sec;
+    } else {
+      // Edit wrap hidden — only save secret if user typed one
+      var sec2 = $('cfgSecret').value;
+      if (sec2) body.client_secret = sec2;
+    }
     var mode = $('cfgMode').value;
     var sched = { mode: mode };
     if (mode === 'daily') sched.time = $('cfgTime').value;
@@ -1781,6 +1899,67 @@
         toast('Settings saved');
       })
       .catch(function(){ toast('Save failed'); });
+  }
+
+  // ── Data files ────────────────────────────────────────────────────────────
+  function refreshFiles() {
+    fetch('/api/files').then(function(r) { return r.json(); }).then(function(f) {
+      var cat   = (f.catfile  || {});
+      var views = (f.views    || {});
+      var catStatus   = $('catStatus');
+      var viewsStatus = $('viewsStatus');
+      var dlBtn       = $('catDownloadBtn');
+
+      if (cat.present) {
+        var sup = cat.suppliers != null ? ' — ' + cat.suppliers + ' suppliers' : '';
+        catStatus.textContent = '● Configured' + sup;
+        catStatus.className = 'files-status present';
+        if (dlBtn) dlBtn.classList.remove('hidden');
+      } else {
+        catStatus.textContent = 'Not uploaded';
+        catStatus.className = 'files-status absent';
+        if (dlBtn) dlBtn.classList.add('hidden');
+      }
+
+      if (views.present) {
+        var vc = views.view_count != null ? ' — ' + views.view_count + ' view(s)' : '';
+        viewsStatus.textContent = '● Configured' + vc;
+        viewsStatus.className = 'files-status present';
+      } else {
+        viewsStatus.textContent = 'Not uploaded';
+        viewsStatus.className = 'files-status absent';
+      }
+    }).catch(function() { /* silently ignore */ });
+  }
+
+  function uploadFile(inputEl, url) {
+    var file = inputEl.files[0];
+    if (!file) return;
+    var filesMsg = $('filesMsg');
+    if (filesMsg) { filesMsg.textContent = ''; }
+    file.arrayBuffer().then(function(buf) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf
+      });
+    }).then(function(r) {
+      if (r.ok) {
+        inputEl.value = '';
+        refreshFiles();
+        toast('Uploaded');
+      } else {
+        return r.json().catch(function() { return {}; }).then(function(j) {
+          var msg = j.error || ('Upload failed (HTTP ' + r.status + ')');
+          if (filesMsg) { filesMsg.textContent = msg; }
+          toast('Upload failed');
+        });
+      }
+    }).catch(function(e) {
+      var msg = e.message || 'Upload error';
+      if (filesMsg) { filesMsg.textContent = msg; }
+      toast('Upload failed');
+    });
   }
 
   // ── Export menu ───────────────────────────────────────────────────────────
@@ -1936,6 +2115,63 @@
     $('cfgTest').addEventListener('click', doTestConnection);
 
     $('cfgSave').addEventListener('click', doSave);
+
+    // Edit / Cancel buttons for connection section
+    $('connEditBtn').addEventListener('click', function() {
+      $('connStatusRow').classList.add('hidden');
+      $('connEditWrap').classList.remove('hidden');
+      $('connCancelBtn').classList.remove('hidden');
+      $('cfgHost').focus();
+    });
+
+    $('connCancelBtn').addEventListener('click', function() {
+      $('connEditWrap').classList.add('hidden');
+      $('connCancelBtn').classList.add('hidden');
+      $('connStatusRow').classList.remove('hidden');
+      $('cfgHost').value = '';
+      $('cfgId').value = '';
+      $('cfgSecret').value = '';
+      $('cfgTestResult').textContent = '';
+      $('cfgTestResult').className = '';
+      $('connEditBtn').focus();
+    });
+
+    // Data file upload buttons
+    $('catUploadBtn').addEventListener('click', function() {
+      $('catFileInput').value = '';
+      $('catFileInput').click();
+    });
+
+    $('catFileInput').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      if (!/\.xlsx$/i.test(file.name)) {
+        toast('Please select a .xlsx file');
+        this.value = '';
+        return;
+      }
+      uploadFile(this, '/api/upload/catfile');
+    });
+
+    $('viewsUploadBtn').addEventListener('click', function() {
+      $('viewsFileInput').value = '';
+      $('viewsFileInput').click();
+    });
+
+    $('viewsFileInput').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      if (!/\.json$/i.test(file.name)) {
+        toast('Please select a .json file');
+        this.value = '';
+        return;
+      }
+      uploadFile(this, '/api/upload/views');
+    });
+
+    $('catDownloadBtn').addEventListener('click', function() {
+      window.location = '/api/catfile';
+    });
   }
 
   // ── Page init ─────────────────────────────────────────────────────────────
