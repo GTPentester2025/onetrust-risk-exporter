@@ -118,10 +118,6 @@ def build_deck(payload):
     from pptx.util import Inches, Pt, Emu
     from pptx.chart.data import CategoryChartData
     from pptx.enum.chart import XL_CHART_TYPE
-    from pptx.enum.text import PP_ALIGN
-    from pptx.oxml.ns import qn
-    from lxml import etree
-    from pptx.enum.shapes import MSO_SHAPE_TYPE
 
     prs = Presentation()
     prs.slide_width = Inches(13.333)
@@ -211,7 +207,6 @@ def build_deck(payload):
         # Pie chart  left=0.5, top=1.6, w=5.9, h=3.1
         # -------------------------------------------------------------------
         if doms:
-            from pptx.util import Pt as Pt_
             cd = CategoryChartData()
             cd.categories = [d for d, _ in doms]
             cd.add_series("Risks", [n for _, n in doms])
@@ -245,7 +240,6 @@ def build_deck(payload):
         # Stacked bar  left=6.6, top=1.6, w=6.2, h=3.1
         # -------------------------------------------------------------------
         if doms and cats:
-            from pptx.enum.chart import XL_LABEL_POSITION
             cd = CategoryChartData()
             cd.categories = [d for d, _ in doms]
             for j, c in enumerate(cats):

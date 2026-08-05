@@ -121,7 +121,9 @@ def test_zone_slide_labeled_and_fits():
 
 
 def test_dark_theme_background():
+    from pptx.enum.dml import MSO_FILL
     prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(_payload())))
     for slide in prs.slides:
         fill = slide.background.fill
-        assert fill.type is not None   # background explicitly set
+        assert fill.type == MSO_FILL.SOLID
+        assert str(fill.fore_color.rgb) == "1B1A19"
