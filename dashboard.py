@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from zone_reports import stats
@@ -267,7 +267,10 @@ def main(argv=None):
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args(argv)
     url = f"http://127.0.0.1:{args.port}/"
-    server = HTTPServer(("127.0.0.1", args.port), make_handler())
+    # Threading so a slow request (e.g. Test Connection reaching OneTrust)
+    # never blocks concurrent requests like Save. daemon_threads: no hang on exit.
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler())
+    server.daemon_threads = True
     print(f"Dashboard at {url}  (Ctrl-C to stop)")
     stop_event = threading.Event()
     threading.Thread(target=_scheduler_loop, args=(stop_event,), daemon=True).start()
