@@ -494,10 +494,32 @@
       font-weight: 700;
     }
 
+    .ki-intro {
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+      margin-bottom: 2px;
+    }
+
     .ki-concentration {
       font-size: 0.85rem;
       color: var(--fg-muted);
       margin-bottom: 12px;
+    }
+
+    .ki-section {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--fg);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin: 4px 0 10px;
+    }
+
+    .ki-phrase {
+      font-size: 0.8rem;
+      color: var(--fg-muted);
     }
 
     #ki-domains {
@@ -1681,6 +1703,12 @@
     hl.innerHTML = 'A total of <span class="ki-num">' + z.total + '</span> risks identified across business units';
     elNarrative.appendChild(hl);
 
+    // Intro prose (mirrors the PPT narrative text)
+    var intro = document.createElement('p');
+    intro.className = 'ki-intro';
+    intro.textContent = 'Risk concentration is uneven, with strong clustering in a few key areas';
+    elNarrative.appendChild(intro);
+
     // Concentration line from grand_by_cat desc (>=2 nonzero cats)
     var gc = (z.grand_by_cat || []).filter(function(p) { return p[1] > 0; });
     gc.sort(function(a, b) { return b[1] - a[1]; });
@@ -1689,18 +1717,26 @@
       var pct = z.total ? Math.round(100 * (n1 + n2) / z.total) : 0;
       var conc = document.createElement('p');
       conc.className = 'ki-concentration';
-      conc.innerHTML = catLabel(gc[0][0]) + ' (' + n1 + ') and ' + catLabel(gc[1][0]) + ' (' + n2 + ') together account for <span class="ki-num">' + pct + '%</span> of total exposure';
+      conc.innerHTML = catLabel(gc[0][0]) + ' (' + n1 + ' risks) and ' + catLabel(gc[1][0]) + ' (' + n2 + ' risks) together account for <span class="ki-num">' + pct + '%</span> of total exposure';
       elNarrative.appendChild(conc);
     }
 
-    // Domain cards grid
+    // Section heading (as in the PPT write-up)
+    var section = document.createElement('h3');
+    section.className = 'ki-section';
+    section.textContent = 'Key Insights by Risk Domain';
+    elNarrative.appendChild(section);
+
+    // Per-domain write-up blocks (same wording as narrative.py / the PPT)
+    var PHRASES = ['heavily concentrated in', 'primarily in', 'led by', 'distributed across'];
     var grid = document.createElement('div');
     grid.id = 'ki-domains';
-    (z.by_domain || []).forEach(function(entry) {
+    (z.by_domain || []).forEach(function(entry, rank) {
       var dom = entry[0];
       var domTotal = entry[1];
       var domPct = (z.domain_pct && z.domain_pct[dom] != null) ? z.domain_pct[dom] : (z.total ? Math.round(100 * domTotal / z.total) : 0);
       var topCatsForDom = (z.top_cats && z.top_cats[dom]) || [];
+      var phrase = PHRASES[Math.min(rank, PHRASES.length - 1)];
 
       var card = document.createElement('div');
       card.className = 'ki-domain-card';
@@ -1714,17 +1750,17 @@
 
       var badge = document.createElement('span');
       badge.className = 'ki-pct-badge';
-      badge.textContent = domPct + '% of total';
-
-      var countEl = document.createElement('span');
-      countEl.className = 'ki-count';
-      countEl.textContent = domTotal + ' risk' + (domTotal !== 1 ? 's' : '');
+      badge.textContent = domPct + '% of total risk' + (rank === 0 ? ' – highest' : '');
 
       topRow.appendChild(badge);
-      topRow.appendChild(countEl);
-
       card.appendChild(nameEl);
       card.appendChild(topRow);
+
+      var phraseEl = document.createElement('div');
+      phraseEl.className = 'ki-phrase';
+      phraseEl.textContent = domTotal + ' risk' + (domTotal !== 1 ? 's' : '') +
+        (topCatsForDom.length ? ', ' + phrase + ':' : '');
+      card.appendChild(phraseEl);
 
       if (topCatsForDom.length > 0) {
         var chips = document.createElement('div');
@@ -1732,7 +1768,7 @@
         topCatsForDom.forEach(function(cp) {
           var chip = document.createElement('span');
           chip.className = 'ki-chip';
-          chip.textContent = catLabel(cp[0]) + ' · ' + cp[1];
+          chip.textContent = catLabel(cp[0]) + ' (' + cp[1] + ')';
           chips.appendChild(chip);
         });
         card.appendChild(chips);
