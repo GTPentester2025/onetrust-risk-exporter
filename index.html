@@ -1602,42 +1602,11 @@
     var maxTotal = colTotals.reduce(function(a, b) { return Math.max(a, b); }, 1);
 
     var datasets = activeCats.map(function(cat, catIdx) {
-      var isLast = catIdx === activeCats.length - 1;
       return {
         label: catLabel(cat),
         data: domains.map(function(dom) { return (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0; }),
         backgroundColor: seriesColor(catIdx, cat),
-        borderColor: 'transparent', borderWidth: 0,
-        datalabels: isLast ? [
-          // Per-segment label for last dataset (same as others below, plus column total above)
-          {
-            anchor: 'center',
-            align: 'center',
-            color: '#1b1a19',
-            font: { size: 10 },
-            formatter: function(value, ctx) {
-              return (value > 0 && value / maxTotal > 0.06) ? value : '';
-            }
-          },
-          // Column total label above last segment
-          {
-            anchor: 'end',
-            align: 'end',
-            color: '#f3f2f1',
-            font: { weight: '700', size: 10 },
-            formatter: function(value, ctx) {
-              return colTotals[ctx.dataIndex] || '';
-            }
-          }
-        ] : {
-          anchor: 'center',
-          align: 'center',
-          color: '#1b1a19',
-          font: { size: 10 },
-          formatter: function(value, ctx) {
-            return (value > 0 && value / maxTotal > 0.06) ? value : '';
-          }
-        }
+        borderColor: 'transparent', borderWidth: 0
       };
     });
     var ctx = $('bar').getContext('2d');
@@ -1662,7 +1631,23 @@
               footer: function(items) { return 'Total: ' + (colTotals[items[0].dataIndex] || 0); }
             }
           },
-          datalabels: {}   // overridden per-dataset above
+          datalabels: {
+            labels: {
+              segment: {
+                anchor: 'center', align: 'center',
+                color: '#1b1a19', font: { size: 10, weight: '600' },
+                formatter: function(value, ctx) {
+                  return (value > 0 && maxTotal > 0 && value / maxTotal > 0.06) ? value : '';
+                }
+              },
+              total: {
+                anchor: 'end', align: 'end', offset: -2,
+                color: '#f3f2f1', font: { weight: '700', size: 10 },
+                display: function(ctx) { return ctx.datasetIndex === ctx.chart.data.datasets.length - 1; },
+                formatter: function(value, ctx) { return colTotals[ctx.dataIndex] || ''; }
+              }
+            }
+          }
         }
       }
     });
@@ -1698,6 +1683,7 @@
 
     // Concentration line from grand_by_cat desc (>=2 nonzero cats)
     var gc = (z.grand_by_cat || []).filter(function(p) { return p[1] > 0; });
+    gc.sort(function(a, b) { return b[1] - a[1]; });
     if (gc.length >= 2) {
       var n1 = gc[0][1], n2 = gc[1][1];
       var pct = z.total ? Math.round(100 * (n1 + n2) / z.total) : 0;
