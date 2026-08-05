@@ -173,6 +173,9 @@ def test_get_config_masked(monkeypatch):
     status, ctype, body = dashboard.handle_get("/api/config")
     j = _json.loads(body)
     assert status == 200 and "client_secret" not in j and j["has_secret"] is True
+    # strict shape — no raw hostname/client_id either
+    assert "hostname" not in j and "client_id" not in j
+    assert "configured" in j and "host_hint" in j
 
 def test_get_status(monkeypatch):
     dashboard.reset_job()
@@ -202,7 +205,10 @@ def test_post_config_saves_and_masks(monkeypatch):
     body = _json.dumps({"hostname": "h2"}).encode()
     status, _c, out = dashboard.handle_post("/api/config", body)
     j = _json.loads(out)
-    assert status == 200 and "client_secret" not in j and j["hostname"] == "h2"
+    # strict mask: no raw credential fields
+    assert status == 200 and "client_secret" not in j
+    assert "hostname" not in j and "client_id" not in j
+    assert "configured" in j and "has_secret" in j
 
 
 def test_post_config_test_uses_saved_secret_fallback(monkeypatch):
@@ -256,8 +262,62 @@ def test_post_config_real_roundtrip_preserves_secret(monkeypatch, tmp_path):
     assert status == 200
     assert "client_secret" not in j
     assert j.get("has_secret") is True
-    assert j["hostname"] == "newhost"
+    # strict mask: no raw credential fields
+    assert "hostname" not in j and "client_id" not in j
+    assert "configured" in j
 
     on_disk = _json.loads(cfg_file.read_text(encoding="utf-8"))
     assert on_disk["client_secret"] == "ORIGSEC"
     assert on_disk["hostname"] == "newhost"
+
+
+def test_get_config_strict_no_raw_values(monkeypatch):
+    monkeypatch.setattr(dashboard, "load_config",
+        lambda p: {"hostname": "app-de.onetrust.com", "client_id": "cid",
+                   "client_secret": "S",
+                   "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}})
+    status, _c, body = dashboard.handle_get("/api/config")
+    j = _json.loads(body)
+    assert status == 200
+    assert "hostname" not in j and "client_id" not in j and "client_secret" not in j
+    assert j["configured"] is True and j["has_secret"] is True
+    assert j["host_hint"].startswith("ap") and j["host_hint"].endswith(".onetrust.com")
+
+
+def test_files_status_empty(monkeypatch, tmp_path):
+    monkeypatch.setattr(dashboard, "CAT_FILE", str(tmp_path / "cat.xlsx"))
+    monkeypatch.setattr(dashboard, "VIEWS_FILE", tmp_path / "views.json")
+    j = dashboard.files_status()
+    assert j["catfile"]["present"] is False
+    assert j["views"]["present"] is False
+
+
+def test_upload_views_valid_and_invalid(monkeypatch, tmp_path):
+    monkeypatch.setattr(dashboard, "VIEWS_FILE", tmp_path / "views.json")
+    monkeypatch.setattr(dashboard, "CAT_FILE", str(tmp_path / "cat.xlsx"))
+    ok = _json.dumps({"views": [{"name": "V"}]}).encode()
+    status, _c, body = dashboard.handle_post("/api/upload/views", ok)
+    assert status == 200 and _json.loads(body)["views"]["present"] is True
+    assert (tmp_path / "views.json").exists()
+    bad = b"not json"
+    status, _c, body = dashboard.handle_post("/api/upload/views", bad)
+    assert status == 400
+
+
+def test_upload_catfile_magic(monkeypatch, tmp_path):
+    monkeypatch.setattr(dashboard, "CAT_FILE", str(tmp_path / "cat.xlsx"))
+    monkeypatch.setattr(dashboard, "VIEWS_FILE", tmp_path / "views.json")
+    status, _c, _b = dashboard.handle_post("/api/upload/catfile", b"NOTAZIP")
+    assert status == 400
+    status, _c, body = dashboard.handle_post("/api/upload/catfile", b"PK\x03\x04fakezip")
+    assert status == 200 and _json.loads(body)["catfile"]["present"] is True
+
+
+def test_catfile_download(monkeypatch, tmp_path):
+    monkeypatch.setattr(dashboard, "CAT_FILE", str(tmp_path / "cat.xlsx"))
+    status, _c, _b = dashboard.handle_get("/api/catfile")
+    assert status == 404
+    (tmp_path / "cat.xlsx").write_bytes(b"PK\x03\x04data")
+    status, ctype, body = dashboard.handle_get("/api/catfile")
+    assert status == 200 and body.startswith(b"PK")
+    assert "spreadsheetml" in ctype

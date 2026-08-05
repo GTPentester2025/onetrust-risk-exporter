@@ -83,3 +83,8 @@ def test_due_daily():
     assert cs.next_run_due(s, dt.datetime(2026,8,5,6,30), dt.datetime(2026,8,5,7,0)) is False
     # last ran yesterday, now past today's time -> due
     assert cs.next_run_due(s, dt.datetime(2026,8,4,6,30), dt.datetime(2026,8,5,7,0)) is True
+
+def test_host_hint():
+    assert cs.host_hint("app-de.onetrust.com") == "ap….onetrust.com"
+    assert cs.host_hint("") == ""
+    assert cs.host_hint("localhost") == "lo…"      # no dot suffix
