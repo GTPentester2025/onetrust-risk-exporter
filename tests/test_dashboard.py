@@ -49,20 +49,6 @@ def test_export_cmd_has_creds_and_all_columns():
     assert "--client-secret" in cmd and "sec" in cmd
     assert cmd[cmd.index("--out") + 1] == "raw_export.csv"
 
-def test_run_fetch_missing_view_raises():
-    with pytest.raises(ValueError):
-        dashboard.run_fetch({"hostname": "h", "client_id": "c",
-                             "client_secret": "s"})
-
-def test_run_fetch_reports_step_failure():
-    def fake_runner(cmd, **kw):
-        return subprocess.CompletedProcess(cmd, 1, "", "403 Forbidden")
-    with pytest.raises(RuntimeError) as e:
-        dashboard.run_fetch({"view": "V", "hostname": "h",
-                             "client_id": "c", "client_secret": "s"},
-                            runner=fake_runner)
-    assert "403" in str(e.value)
-
 
 def test_handle_get_views(monkeypatch):
     monkeypatch.setattr(dashboard, "list_views", lambda: ["A", "B"])
@@ -86,17 +72,192 @@ def test_handle_get_root_serves_html():
     assert b"<!DOCTYPE html>" in body or b"<!doctype html>" in body
 
 
-def test_handle_post_fetch_bad_request(monkeypatch):
-    def boom(b): raise ValueError("Missing view")
-    monkeypatch.setattr(dashboard, "run_fetch", boom)
-    status, _c, body = dashboard.handle_post("/api/fetch", b"{}")
-    assert status == 400
-    assert "Missing view" in _json.loads(body)["error"]
+CFG = {"hostname": "h", "client_id": "c", "client_secret": "s",
+       "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}}
+
+def test_do_fetch_requires_config(monkeypatch, tmp_path):
+    with pytest.raises(ValueError):
+        dashboard.do_fetch({"hostname": "", "client_id": "", "client_secret": ""})
+
+def test_do_fetch_runs_both_steps_and_counts(monkeypatch, tmp_path):
+    calls = []
+    def fake_runner(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+    monkeypatch.setattr(dashboard.stats, "load_rows", lambda p: [{"a": 1}, {"a": 2}])
+    n = dashboard.do_fetch(CFG, runner=fake_runner)
+    assert n == 2
+    assert len(calls) == 2  # export then refine
+
+def test_run_fetch_job_sets_done(monkeypatch):
+    dashboard.reset_job()
+    monkeypatch.setattr(dashboard, "do_fetch", lambda cfg, **kw: 7)
+    fixed = datetime.datetime(2026, 8, 5, 6, 0)
+    dashboard.run_fetch_job(config_loader=lambda: CFG, now_fn=lambda: fixed)
+    assert dashboard.JOB["state"] == "done"
+    assert dashboard.JOB["rows"] == 7
+    assert dashboard.JOB["last_run"] == fixed
+    assert dashboard.JOB["source"] == "api"
+
+def test_run_fetch_job_error(monkeypatch):
+    dashboard.reset_job()
+    def boom(cfg, **kw): raise RuntimeError("403 Forbidden")
+    monkeypatch.setattr(dashboard, "do_fetch", boom)
+    dashboard.run_fetch_job(config_loader=lambda: CFG, now_fn=lambda: datetime.datetime(2026,8,5))
+    assert dashboard.JOB["state"] == "error"
+    assert "403" in dashboard.JOB["message"]
+
+def test_test_connection_ok(monkeypatch):
+    monkeypatch.setattr(dashboard, "get_token", lambda h, c, s: "tok")
+    r = dashboard.test_connection("h", "c", "s")
+    assert r["ok"] is True
+
+def test_test_connection_fail(monkeypatch):
+    def boom(h, c, s): raise SystemExit("No access_token: bad creds")
+    monkeypatch.setattr(dashboard, "get_token", boom)
+    r = dashboard.test_connection("h", "c", "s")
+    assert r["ok"] is False and "access_token" in r["message"]
+
+def test_start_fetch_async_single_flight(monkeypatch):
+    # Branch 1: already running -> no new thread, returns {started:False, running:True}
+    dashboard.reset_job()
+    dashboard.JOB["state"] = "running"
+    result = dashboard.start_fetch_async()
+    assert result == {"started": False, "running": True}
+
+    # Branch 2: idle -> claims slot under lock, spawns thread, returns {started:True}
+    dashboard.reset_job()
+    monkeypatch.setattr(dashboard, "run_fetch_job", lambda **kw: None)
+    result = dashboard.start_fetch_async()
+    assert result["started"] is True
+    # The slot was claimed under the lock before the (no-op) thread ran,
+    # so state remains "running" (no-op never sets done/error).
+    assert dashboard.JOB["state"] == "running"
+
+def test_scheduler_tick_starts_when_due(monkeypatch):
+    started_calls = []
+    monkeypatch.setattr(dashboard, "start_fetch_async",
+                        lambda: started_calls.append(1) or {"started": True, "running": False})
+    cfg = {
+        "hostname": "h", "client_id": "c", "client_secret": "s",
+        "schedule": {"mode": "hourly", "time": "06:00", "interval_hours": 1},
+    }
+    dashboard.reset_job()
+    result = dashboard.scheduler_tick(
+        datetime.datetime(2026, 8, 5, 10, 0),
+        config_loader=lambda: cfg,
+    )
+    assert result is True
+    assert started_calls  # start_fetch_async was called
+
+def test_scheduler_tick_skips_when_not_configured(monkeypatch):
+    cfg = {"hostname": "", "client_id": "", "client_secret": "", "schedule": {}}
+    dashboard.reset_job()
+    result = dashboard.scheduler_tick(
+        datetime.datetime(2026, 8, 5, 10, 0),
+        config_loader=lambda: cfg,
+    )
+    assert result is False
+
+def test_test_connection_exception_branch(monkeypatch):
+    monkeypatch.setattr(dashboard, "get_token",
+                        lambda h, c, s: (_ for _ in ()).throw(ConnectionError("boom")))
+    r = dashboard.test_connection("h", "c", "s")
+    assert r["ok"] is False
+    assert "boom" in r["message"]
+
+def test_get_config_masked(monkeypatch):
+    monkeypatch.setattr(dashboard, "load_config",
+        lambda p: {"hostname": "h", "client_id": "c", "client_secret": "S",
+                   "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}})
+    status, ctype, body = dashboard.handle_get("/api/config")
+    j = _json.loads(body)
+    assert status == 200 and "client_secret" not in j and j["has_secret"] is True
+
+def test_get_status(monkeypatch):
+    dashboard.reset_job()
+    status, _c, body = dashboard.handle_get("/api/status")
+    j = _json.loads(body)
+    assert j["state"] == "idle" and j["last_run"] is None
+
+def test_post_fetch_starts(monkeypatch):
+    monkeypatch.setattr(dashboard, "start_fetch_async", lambda: {"started": True, "running": False})
+    status, _c, body = dashboard.handle_post("/api/fetch", b"")
+    assert status == 202 and _json.loads(body)["started"] is True
+
+def test_post_config_test(monkeypatch):
+    monkeypatch.setattr(dashboard, "test_connection", lambda h, c, s: {"ok": True, "message": "Connection OK"})
+    body = _json.dumps({"hostname": "h", "client_id": "c", "client_secret": "s"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config/test", body)
+    assert status == 200 and _json.loads(out)["ok"] is True
+
+def test_post_config_saves_and_masks(monkeypatch):
+    saved = {}
+    monkeypatch.setattr(dashboard, "load_config", lambda p: {"hostname": "", "client_id": "",
+        "client_secret": "OLD", "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6}})
+    def fake_save(p, incoming, existing):
+        saved.update(existing); saved.update({k: v for k, v in incoming.items() if v})
+        return {**existing, **{k: v for k, v in incoming.items() if v}}
+    monkeypatch.setattr(dashboard, "save_config", fake_save)
+    body = _json.dumps({"hostname": "h2"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config", body)
+    j = _json.loads(out)
+    assert status == 200 and "client_secret" not in j and j["hostname"] == "h2"
 
 
-def test_handle_post_fetch_error(monkeypatch):
-    def boom(b): raise RuntimeError("403 Forbidden")
-    monkeypatch.setattr(dashboard, "run_fetch", boom)
-    status, _c, body = dashboard.handle_post("/api/fetch", b'{"view":"V"}')
-    assert status == 500
-    assert "403" in _json.loads(body)["error"]
+def test_post_config_test_uses_saved_secret_fallback(monkeypatch):
+    saved_cfg = {
+        "hostname": "savedhost",
+        "client_id": "savedid",
+        "client_secret": "SAVEDSEC",
+        "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6},
+    }
+    monkeypatch.setattr(dashboard, "load_config", lambda p: saved_cfg)
+
+    recorded = {}
+
+    def fake_test_connection(host, cid, sec):
+        recorded["host"] = host
+        recorded["cid"] = cid
+        recorded["sec"] = sec
+        return {"ok": True, "message": "ok"}
+
+    monkeypatch.setattr(dashboard, "test_connection", fake_test_connection)
+
+    body = _json.dumps({"hostname": "h2"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config/test", body)
+    assert status == 200
+    assert _json.loads(out)["ok"] is True
+    assert recorded["host"] == "h2"
+    assert recorded["sec"] == "SAVEDSEC"
+
+
+def test_post_config_real_roundtrip_preserves_secret(monkeypatch, tmp_path):
+    from config_store import save_config as real_save_config
+
+    cfg_file = tmp_path / "config.json"
+    monkeypatch.setattr(dashboard, "CONFIG_FILE", cfg_file)
+
+    initial = {
+        "hostname": "orighost",
+        "client_id": "origid",
+        "client_secret": "ORIGSEC",
+        "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6},
+    }
+    real_save_config(str(cfg_file), initial, {
+        "hostname": "", "client_id": "", "client_secret": "",
+        "schedule": {"mode": "off", "time": "06:00", "interval_hours": 6},
+    })
+
+    body = _json.dumps({"hostname": "newhost"}).encode()
+    status, _c, out = dashboard.handle_post("/api/config", body)
+    j = _json.loads(out)
+
+    assert status == 200
+    assert "client_secret" not in j
+    assert j.get("has_secret") is True
+    assert j["hostname"] == "newhost"
+
+    on_disk = _json.loads(cfg_file.read_text(encoding="utf-8"))
+    assert on_disk["client_secret"] == "ORIGSEC"
+    assert on_disk["hostname"] == "newhost"
