@@ -3,6 +3,7 @@ import pytest
 
 pptx = pytest.importorskip("pptx")  # skip cleanly if python-pptx not installed
 from pptx import Presentation
+from pptx.util import Emu
 import ppt_export
 
 def _payload():
@@ -89,3 +90,38 @@ def test_table_dimensions():
 
     assert len(tbl.rows) == expected_rows, f"Expected {expected_rows} rows, got {len(tbl.rows)}"
     assert len(tbl.columns) == expected_cols, f"Expected {expected_cols} cols, got {len(tbl.columns)}"
+
+
+def test_many_domains_table_capped():
+    p = _payload()
+    z = p["zones"]["GHQ"]
+    doms = [[f"Domain{i}", 10 - i] for i in range(10)]
+    z["by_domain"] = doms
+    z["domain_pct"] = {d: 10 for d, _ in doms}
+    z["crosstab"] = {d: {"COMMERCIAL": n} for d, n in doms}
+    z["total"] = sum(n for _, n in doms)
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(p)))
+    slide = prs.slides[1]      # GHQ
+    tbl = next(sh.table for sh in slide.shapes if sh.has_table)
+    assert len(tbl.rows) <= 9      # header + 7 + Other
+    texts = [tbl.cell(r, 0).text for r in range(len(tbl.rows))]
+    assert any(t.startswith("Other") for t in texts)
+
+
+def test_zone_slide_labeled_and_fits():
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(_payload())))
+    slide = prs.slides[1]
+    texts = " ".join(sh.text_frame.text for sh in slide.shapes if sh.has_text_frame)
+    assert "GHQ" in texts and "Risk Insights" in texts
+    W, H = Emu(int(12192000)), Emu(int(6858000))   # 13.333x7.5in
+    for sh in slide.shapes:
+        assert sh.left >= 0 and sh.top >= 0
+        assert sh.left + sh.width <= W + Emu(1)
+        assert sh.top + sh.height <= H + Emu(1)
+
+
+def test_dark_theme_background():
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(_payload())))
+    for slide in prs.slides:
+        fill = slide.background.fill
+        assert fill.type is not None   # background explicitly set
