@@ -14,15 +14,20 @@ ZONES = {
     "NAZ":     "North America Zone",
     "APAC":    "APAC",
     "EUR":     "Europe",
-    "BEES":    "BEES",
-    "BEES-FT": "BEES | FINTECH",
+    "GRO":     ["BEES", "BEES | FINTECH"],
     "Overall": None,
 }
+
+TREATED_STAGES = {"monitoring"}
+
+
+def is_treated(stage):
+    return (stage or "").strip().lower() in TREATED_STAGES
 
 
 @dataclass
 class ZoneStats:
-    organization: str | None
+    organization: object
     total: int
     by_cat: dict                      # Cat -> count, in CAT_ORDER (+extras)
     grand_by_cat: list                # [(Cat, count)] same order, for charts
@@ -30,6 +35,9 @@ class ZoneStats:
     crosstab: dict                    # domain -> {Cat: count}
     domain_pct: dict                  # domain -> int percent of total
     top_cats: dict                    # domain -> [(Cat, count)] selected
+    treated: int = 0
+    treated_pct: int = 0
+    by_stage: list = field(default_factory=list)
 
 
 def load_rows(path):
@@ -67,9 +75,17 @@ def _cat_sort_key(cat):
     return (CAT_ORDER.index(cat) if cat in CAT_ORDER else len(CAT_ORDER), cat)
 
 
+def _match_org(org_val, organization):
+    if organization is None:
+        return True
+    o = (org_val or "").strip()
+    if isinstance(organization, (list, tuple, set)):
+        return o in organization
+    return o == organization
+
+
 def compute_zone_stats(rows, organization=None):
-    sel = [r for r in rows
-           if organization is None or (r.get("Organization") or "").strip() == organization]
+    sel = [r for r in rows if _match_org(r.get("Organization"), organization)]
     total = len(sel)
 
     crosstab, dom_total, cat_total = {}, {}, {}
@@ -93,5 +109,15 @@ def compute_zone_stats(rows, organization=None):
         pairs = sorted(crosstab[dom].items(), key=lambda kv: (-kv[1], _cat_sort_key(kv[0])))
         top_cats[dom] = select_top_cats(pairs, dom_total[dom])
 
+    treated, stage_total = 0, {}
+    for r in sel:
+        stg = (r.get("Stage") or "").strip() or "(blank)"
+        stage_total[stg] = stage_total.get(stg, 0) + 1
+        if is_treated(r.get("Stage")):
+            treated += 1
+    treated_pct = _pct(treated, total)
+    by_stage = sorted(stage_total.items(), key=lambda kv: (-kv[1], kv[0]))
+
     return ZoneStats(organization, total, by_cat, grand_by_cat,
-                     by_domain, crosstab, domain_pct, top_cats)
+                     by_domain, crosstab, domain_pct, top_cats,
+                     treated, treated_pct, by_stage)

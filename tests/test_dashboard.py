@@ -25,7 +25,7 @@ def test_payload_shape_and_zone_totals():
                               "PACKAGING", "TECHNOLOGY", "RAU", "Fees"]
     # every zone code present, incl. Overall
     assert set(p["zones"]) == {"GHQ", "AFR", "SAZ", "MAZ", "NAZ",
-                               "APAC", "EUR", "BEES", "BEES-FT", "Overall"}
+                               "APAC", "EUR", "GRO", "Overall"}
     ghq = p["zones"]["GHQ"]
     assert ghq["total"] == 3
     assert ghq["by_cat"] == {"COMMERCIAL": 2, "NCI": 1}

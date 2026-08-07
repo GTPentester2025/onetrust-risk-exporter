@@ -13,7 +13,11 @@ from zone_reports.narrative import build_title, build_narrative, format_date_ord
 
 
 def zone_display_name(sheet, org):
-    return "Overall" if org is None else org
+    if org is None:
+        return "Overall"
+    if not isinstance(org, str):     # list-valued (e.g. GRO)
+        return sheet
+    return org
 
 
 def iter_zone_reports(rows, date_str):

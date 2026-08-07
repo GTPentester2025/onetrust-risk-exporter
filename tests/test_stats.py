@@ -1,7 +1,7 @@
 # tests/test_stats.py
 import csv
 from zone_reports.stats import (
-    compute_zone_stats, select_top_cats, CAT_ORDER, ZONES,
+    compute_zone_stats, select_top_cats, CAT_ORDER, ZONES, is_treated,
 )
 
 # The MAZ cross-tab from the reference workbook (rows=domain, cols=Cat).
@@ -54,3 +54,45 @@ def test_select_top_cats_rule():
     # accumulate desc until cumulative >= 80% of total, min 2, max 4
     assert select_top_cats([("A",7),("B",6),("C",2),("D",1)], 16) == [("A",7),("B",6)]
     assert select_top_cats([("A",14),("B",9),("C",5),("D",2)], 32) == [("A",14),("B",9),("C",5)]
+
+
+def _rows_mixed():
+    rows = []
+    n = 0
+    def add(org, dom, cat, stage, k=1):
+        nonlocal n
+        for _ in range(k):
+            n += 1
+            rows.append({"ID": f"R{n}", "Organization": org, "Category": dom,
+                         "Cat": cat, "Stage": stage})
+    add("BEES", "Security", "NCI", "Monitoring", 3)
+    add("BEES | FINTECH", "Privacy", "COMMERCIAL", "Assessment", 2)
+    add("BEES | FINTECH", "Security", "NCI", "Monitoring", 1)
+    add("GHQ", "Security", "NCI", "Closed", 4)
+    return rows
+
+def test_gro_combines_both_orgs():
+    s = compute_zone_stats(_rows_mixed(), ["BEES", "BEES | FINTECH"])
+    assert s.total == 6                       # 3 + 2 + 1, excludes GHQ's 4
+    assert s.treated == 4                      # 3 + 1 monitoring
+    assert s.treated_pct == 67                 # round(100*4/6)
+
+def test_compute_accepts_str_and_none():
+    rows = _rows_mixed()
+    assert compute_zone_stats(rows, "BEES").total == 3
+    assert compute_zone_stats(rows, None).total == 10
+
+def test_by_stage_desc():
+    s = compute_zone_stats(_rows_mixed(), None)
+    stages = dict(s.by_stage)
+    assert stages["Monitoring"] == 4 and stages["Closed"] == 4 and stages["Assessment"] == 2
+    assert s.by_stage[0][1] >= s.by_stage[-1][1]     # sorted desc
+
+def test_is_treated():
+    assert is_treated("Monitoring") and is_treated(" monitoring ")
+    assert not is_treated("Closed") and not is_treated("") and not is_treated(None)
+
+def test_zones_has_gro_not_bees():
+    assert "GRO" in ZONES and "BEES" not in ZONES and "BEES-FT" not in ZONES
+    assert ZONES["GRO"] == ["BEES", "BEES | FINTECH"]
+    assert list(ZONES)[-1] == "Overall"
