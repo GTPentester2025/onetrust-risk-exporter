@@ -322,8 +322,8 @@
 
     /* ── Onboarding banner ── */
     #banner {
-      background: rgba(232,200,16,0.07);
-      border: 1px solid rgba(232,200,16,0.3);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: var(--radius);
       padding: 12px 16px;
       display: flex;
@@ -339,24 +339,24 @@
     #banner-text {
       flex: 1;
       font-size: var(--fs-base);
-      color: var(--fg-muted);
+      color: var(--fg-dim);
     }
 
     #banner-open {
       flex-shrink: 0;
       padding: 6px 14px;
-      border: 1px solid var(--gold-deep);
+      border: 1px solid rgba(201,162,39,0.35);
       border-radius: var(--radius);
       background: transparent;
-      color: var(--gold);
+      color: var(--gold-deep);
       font-family: var(--font);
       font-size: var(--fs-sm);
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 150ms;
+      transition: background 150ms, color 150ms;
     }
 
-    #banner-open:hover { background: rgba(232,200,16,0.1); }
+    #banner-open:hover { background: rgba(201,162,39,0.08); color: var(--gold); }
 
     #banner-dismiss {
       flex-shrink: 0;
@@ -573,6 +573,7 @@
       position: relative;
     }
 
+    #treated-container { max-width: 230px; margin: 0 auto; }
     #treatedChart { margin: 0 auto; }
 
     .treated-empty,
@@ -1566,8 +1567,8 @@
 
   // ── Chart palettes ─────────────────────────────────────────────────────────
   var PALETTE = [
-    '#E8C810','#4FC3F7','#F0736A','#34D399','#CE93D8','#FFB74D',
-    '#90CAF9','#F48FB1','#AED581','#FFD54F','#4DD0E1','#BCAAA4'
+    '#E8C810','#C9A227','#5FA8A0','#7D93A8','#A08BA8','#8A8578',
+    '#D6B56A','#4E8AC9','#B5766B','#6BAF8D','#9C8FBF','#77746C'
   ];
 
   function seriesColor(i, cat) {
@@ -1576,23 +1577,36 @@
     return PALETTE[i % PALETTE.length];
   }
 
-  // ── Aging color ramp: #E8C810 -> #FFB74D -> #F0736A (v/maxv 0->0.5->1) ──
+  // ── Aging color ramp: #C9A227 -> #C98B4C -> #BF6E5E (v/maxv 0->0.5->1) ──
   function ageColor(v, maxv) {
-    if (!maxv || maxv === 0) return '#E8C810';
+    if (!maxv || maxv === 0) return '#C9A227';
     var t = Math.max(0, Math.min(1, v / maxv));
     var r, g, b;
     if (t <= 0.5) {
       var s = t / 0.5;
-      r = Math.round(0xe8 + s * (0xff - 0xe8));
-      g = Math.round(0xc8 + s * (0xb7 - 0xc8));
-      b = Math.round(0x10 + s * (0x4d - 0x10));
+      r = Math.round(0xc9 + s * (0xc9 - 0xc9));
+      g = Math.round(0xa2 + s * (0x8b - 0xa2));
+      b = Math.round(0x27 + s * (0x4c - 0x27));
     } else {
       var s2 = (t - 0.5) / 0.5;
-      r = Math.round(0xff + s2 * (0xf0 - 0xff));
-      g = Math.round(0xb7 + s2 * (0x73 - 0xb7));
-      b = Math.round(0x4d + s2 * (0x6a - 0x4d));
+      r = Math.round(0xc9 + s2 * (0xbf - 0xc9));
+      g = Math.round(0x8b + s2 * (0x6e - 0x8b));
+      b = Math.round(0x4c + s2 * (0x5e - 0x4c));
     }
     return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  // ── Label contrast helper: light text on dark fills, dark on bright fills ──
+  function labelColorFor(hex) {
+    // Strip # and parse RGB
+    var h = hex.replace('#', '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var r = parseInt(h.substring(0,2),16)/255;
+    var g = parseInt(h.substring(2,4),16)/255;
+    var b = parseInt(h.substring(4,6),16)/255;
+    // sRGB luma
+    var luma = 0.2126*r + 0.7152*g + 0.0722*b;
+    return luma > 0.45 ? '#1b1a19' : '#f3f2f1';
   }
 
   // Register datalabels plugin
@@ -1885,10 +1899,10 @@
     var ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#1b1a19', borderWidth: 2 }] },
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#181512', borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
-        cutout: '58%',
+        cutout: '68%',
         layout: { padding: 8 },
         plugins: {
           legend: Object.assign({}, LEGEND_DEFAULTS),
@@ -1898,7 +1912,10 @@
           }}}),
           datalabels: {
             anchor: 'center',
-            color: '#1b1a19',
+            color: function(ctx) {
+              var col = ctx.dataset.backgroundColor[ctx.dataIndex];
+              return labelColorFor(col || '#5FA8A0');
+            },
             font: { weight: '600', size: 11 },
             formatter: function(value, ctx) {
               var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
@@ -1966,7 +1983,7 @@
       datasets.push({
         label: 'Other',
         data: otherData,
-        backgroundColor: '#797775',
+        backgroundColor: '#3E3B35',
         borderColor: 'transparent', borderWidth: 0
       });
     }
@@ -2021,7 +2038,11 @@
             labels: {
               segment: {
                 anchor: 'center', align: 'center',
-                color: '#1b1a19', font: { size: 11, weight: '600' },
+                color: function(ctx) {
+                  var col = ctx.dataset.backgroundColor;
+                  return labelColorFor(typeof col === 'string' ? col : '#8A8578');
+                },
+                font: { size: 11, weight: '600' },
                 formatter: function(value, ctx) {
                   return (value > 0 && maxTotal > 0 && value / maxTotal > 0.08) ? value : '';
                 }
@@ -2066,15 +2087,15 @@
         labels: ['Treated', 'Open'],
         datasets: [{
           data: [treated, open],
-          backgroundColor: ['#34D399', '#E8C810'],
-          borderColor: '#1b1a19',
+          backgroundColor: ['#34D399', '#C9A227'],
+          borderColor: '#181512',
           borderWidth: 2
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '62%',
+        cutout: '72%',
         layout: { padding: 8 },
         plugins: {
           legend: Object.assign({}, LEGEND_DEFAULTS),
@@ -2089,7 +2110,10 @@
           }),
           datalabels: {
             anchor: 'center',
-            color: '#1b1a19',
+            color: function(ctx) {
+              var bgColors = ['#34D399', '#C9A227'];
+              return labelColorFor(bgColors[ctx.dataIndex] || '#C9A227');
+            },
             font: { weight: '600', size: 11 },
             formatter: function(value, ctx) {
               var tot = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
@@ -2195,7 +2219,7 @@
       inner.innerHTML = '';
       inner.appendChild(cv);
     }
-    var BUCKET_COLORS = ['#34D399', '#E8C810', '#FFB74D', '#F0736A'];
+    var BUCKET_COLORS = ['#6BAF8D', '#C9A227', '#C98B4C', '#BF6E5E'];
     var labels = buckets.map(function(b) { return b[0]; });
     var values = buckets.map(function(b) { return b[1]; });
     var colors = buckets.map(function(_, i) { return BUCKET_COLORS[i] || BUCKET_COLORS[BUCKET_COLORS.length - 1]; });
