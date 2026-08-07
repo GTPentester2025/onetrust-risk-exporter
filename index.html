@@ -571,11 +571,38 @@
       padding: 8px;
     }
 
-    /* ── Treated row (single full-width chart row) ── */
-    .treated-row {
+    #aging-inner,
+    #bucket-inner {
+      height: 260px;
+    }
+
+    /* ── Treatment & Aging 3-col row ── */
+    .treatment-row {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 16px;
+      align-items: stretch;
+    }
+
+    .treatment-row > .tile {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .treatment-row > .tile .tile-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .treatment-row > .tile .chart-inner-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .treatment-row > .tile .chart-container {
+      flex: 1;
     }
 
     #treatedChart {
@@ -583,9 +610,6 @@
       margin: 0 auto;
     }
 
-    #treated-container {
-      min-height: 260px;
-    }
 
     .treated-empty {
       display: flex;
@@ -607,8 +631,12 @@
       font-style: italic;
     }
 
-    @media (max-width: 900px) {
-      .treated-row { grid-template-columns: 1fr; }
+    @media (max-width: 1024px) {
+      .treatment-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      .treatment-row { grid-template-columns: 1fr; }
     }
 
     /* ── Narrative (export text; tile is #narrative-panel = Key Insights) ── */
@@ -661,9 +689,44 @@
       color: var(--fg-muted);
     }
 
+    /* ── KI summary block (above domain grid) ── */
+    .ki-summary-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 0;
+    }
+
+    .ki-domain-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0 10px;
+    }
+
+    .ki-domain-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .ki-domain-divider-label {
+      font-family: var(--mono);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--fg-dim);
+      white-space: nowrap;
+    }
+
     #ki-domains {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 10px;
       margin-top: 4px;
     }
@@ -813,16 +876,56 @@
     /* ── Table panel: clipped tile, scroll inside .table-scroll ── */
     #table-panel { overflow: hidden; }
 
-    /* ── Zone heading ── */
-    #zone-heading {
+    /* ── Section labels (report banding) ── */
+    .section-label {
       font-family: var(--mono);
-      font-size: var(--fs-base);
-      font-weight: 600;
-      color: var(--gold);
-      letter-spacing: 0.02em;
-      padding: 2px 0 6px;
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--fg-dim);
+      padding: 0 2px 6px;
+      margin-top: 8px;
+      border-bottom: 1px solid rgba(59,58,57,0.5);
+    }
+
+    /* ── Section spacing between bands ── */
+    .section-band {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Zone heading — report header ── */
+    #zone-heading {
+      padding: 4px 0 12px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 2px;
+      margin-bottom: 4px;
+    }
+
+    .zone-header-name {
+      font-family: var(--mono);
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    .zone-header-subline {
+      font-size: var(--fs-sm);
+      color: var(--fg-dim);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .zone-header-status {
+      font-size: var(--fs-xs);
+      color: var(--fg-dim);
+      font-family: var(--mono);
     }
 
     /* ── Empty state ── */
@@ -849,7 +952,7 @@
     #insights {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 24px;
     }
 
     /* ── Settings modal ── */
@@ -1234,47 +1337,25 @@
   <!-- Insights (hidden until data loaded) -->
   <div id="insights" class="hidden">
 
-    <!-- Zone heading (visible in screenshots) -->
+    <!-- Zone heading — report header band -->
     <div id="zone-heading"></div>
 
-    <!-- KPI tile -->
-    <div class="tile" id="kpis-wrap">
-      <div class="tile-header">
-        <div class="tile-title">Key Metrics</div>
-        <div class="tile-toolbar">
-          <button class="tool-btn" id="kpisCopyBtn" type="button" aria-label="Copy KPI summary" title="Copy KPI summary">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-          <button class="tool-btn" id="kpisDownloadBtn" type="button" aria-label="Download KPI panel as PNG" title="Download KPI panel as PNG">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="tile-body">
-        <div id="kpis" aria-label="Key metrics"></div>
-      </div>
-    </div>
+    <!-- ── SECTION: OVERVIEW ── -->
+    <div class="section-band">
+      <div class="section-label">Overview</div>
 
-    <!-- Charts row -->
-    <div class="chart-row">
-      <!-- Pie tile -->
-      <div class="tile" id="pie-panel">
+      <!-- KPI tile -->
+      <div class="tile" id="kpis-wrap">
         <div class="tile-header">
-          <div class="tile-title">Risks by Domain</div>
+          <div class="tile-title">Key Metrics</div>
           <div class="tile-toolbar">
-            <button class="tool-btn" id="pieCopyBtn" type="button" aria-label="Copy pie chart as image" title="Copy pie chart as image">
+            <button class="tool-btn" id="kpisCopyBtn" type="button" aria-label="Copy KPI summary" title="Copy KPI summary">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
-            <button class="tool-btn" id="pieDownloadBtn" type="button" aria-label="Download pie chart as PNG" title="Download pie chart as PNG">
+            <button class="tool-btn" id="kpisDownloadBtn" type="button" aria-label="Download KPI panel as PNG" title="Download KPI panel as PNG">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -1283,26 +1364,140 @@
           </div>
         </div>
         <div class="tile-body">
-          <div class="chart-inner-panel">
-            <div id="pie-container" class="chart-container">
-              <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+          <div id="kpis" aria-label="Key metrics"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: COMPOSITION ── -->
+    <div class="section-band">
+      <div class="section-label">Composition</div>
+
+      <!-- 2-col chart row: pie | bar -->
+      <div class="chart-row">
+        <!-- Pie tile -->
+        <div class="tile" id="pie-panel">
+          <div class="tile-header">
+            <div class="tile-title">Risks by Domain</div>
+            <div class="tile-toolbar">
+              <button class="tool-btn" id="pieCopyBtn" type="button" aria-label="Copy pie chart as image" title="Copy pie chart as image">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              <button class="tool-btn" id="pieDownloadBtn" type="button" aria-label="Download pie chart as PNG" title="Download pie chart as PNG">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="tile-body">
+            <div class="chart-inner-panel">
+              <div id="pie-container" class="chart-container">
+                <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar tile -->
+        <div class="tile" id="bar-panel">
+          <div class="tile-header">
+            <div class="tile-title">Domain x Category Breakdown</div>
+            <div class="tile-toolbar">
+              <button class="tool-btn" id="barCopyBtn" type="button" aria-label="Copy bar chart as image" title="Copy bar chart as image">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              <button class="tool-btn" id="barDownloadBtn" type="button" aria-label="Download bar chart as PNG" title="Download bar chart as PNG">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="tile-body">
+            <div class="chart-inner-panel">
+              <div id="bar-container" class="chart-container">
+                <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Bar tile -->
-      <div class="tile" id="bar-panel">
+    <!-- ── SECTION: TREATMENT & AGING ── -->
+    <div class="section-band">
+      <div class="section-label">Treatment &amp; Aging</div>
+
+      <!-- 3-col treatment row: treated | aging | buckets -->
+      <div class="treatment-row">
+        <!-- Risk Treatment tile -->
+        <div class="tile" id="treated-panel">
+          <div class="tile-header">
+            <div class="tile-title">Risk Treatment</div>
+            <div class="tile-toolbar"></div>
+          </div>
+          <div class="tile-body">
+            <div class="chart-inner-panel">
+              <div id="treated-container" class="chart-container">
+                <canvas id="treatedChart" role="img" aria-label="Donut chart: treated vs open risks"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Aging by Domain tile -->
+        <div class="tile" id="aging-panel">
+          <div class="tile-header">
+            <div class="tile-title">Risk Aging by Domain</div>
+            <div class="tile-toolbar"></div>
+          </div>
+          <div class="tile-body">
+            <div class="chart-inner-panel" id="aging-inner">
+              <canvas id="agingChart" role="img" aria-label="Horizontal bar chart: average untreated risk age by domain"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aging Buckets tile -->
+        <div class="tile" id="bucket-panel">
+          <div class="tile-header">
+            <div class="tile-title">Aging Buckets</div>
+            <div class="tile-toolbar"></div>
+          </div>
+          <div class="tile-body">
+            <div class="chart-inner-panel" id="bucket-inner">
+              <canvas id="bucketChart" role="img" aria-label="Bar chart: risk counts by aging bucket"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: KEY INSIGHTS ── -->
+    <div class="section-band">
+      <div class="section-label">Key Insights</div>
+
+      <!-- Narrative tile — full width -->
+      <div class="tile" id="narrative-panel">
         <div class="tile-header">
-          <div class="tile-title">Domain x Category Breakdown</div>
+          <div class="tile-title">Insights by Risk Domain</div>
           <div class="tile-toolbar">
-            <button class="tool-btn" id="barCopyBtn" type="button" aria-label="Copy bar chart as image" title="Copy bar chart as image">
+            <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
-            <button class="tool-btn" id="barDownloadBtn" type="button" aria-label="Download bar chart as PNG" title="Download bar chart as PNG">
+            <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -1311,112 +1506,43 @@
           </div>
         </div>
         <div class="tile-body">
-          <div class="chart-inner-panel">
-            <div id="bar-container" class="chart-container">
-              <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+          <div id="narrative" aria-label="Key insights" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: DETAIL ── -->
+    <div class="section-band">
+      <div class="section-label">Detail</div>
+
+      <!-- Table tile — full width, scroll-contained -->
+      <div class="data-row">
+        <div class="tile" id="table-panel">
+          <div class="tile-header">
+            <div class="tile-title">Crosstab: Domain by Category</div>
+            <div class="tile-toolbar">
+              <button class="tool-btn" id="tableCopyBtn" type="button" aria-label="Copy crosstab as TSV" title="Copy crosstab as TSV (paste into Excel)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              <button class="tool-btn" id="tableDownloadBtn" type="button" aria-label="Download crosstab as CSV" title="Download crosstab as CSV">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Risk Treatment row (donut) -->
-    <div class="treated-row">
-      <div class="tile" id="treated-panel">
-        <div class="tile-header">
-          <div class="tile-title">Risk Treatment</div>
-        </div>
-        <div class="tile-body">
-          <div class="chart-inner-panel">
-            <div id="treated-container" class="chart-container">
-              <canvas id="treatedChart" role="img" aria-label="Donut chart: treated vs open risks"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Aging charts row -->
-    <div class="chart-row">
-      <!-- Risk Aging by Domain tile -->
-      <div class="tile" id="aging-panel">
-        <div class="tile-header">
-          <div class="tile-title">Risk Aging by Domain</div>
-          <div class="tile-toolbar"></div>
-        </div>
-        <div class="tile-body">
-          <div class="chart-inner-panel" id="aging-inner">
-            <canvas id="agingChart" role="img" aria-label="Horizontal bar chart: average untreated risk age by domain"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- Aging Buckets tile -->
-      <div class="tile" id="bucket-panel">
-        <div class="tile-header">
-          <div class="tile-title">Aging Buckets</div>
-          <div class="tile-toolbar"></div>
-        </div>
-        <div class="tile-body">
-          <div class="chart-inner-panel" id="bucket-inner">
-            <canvas id="bucketChart" role="img" aria-label="Bar chart: risk counts by aging bucket"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Key Insights tile (full-width, above table) -->
-    <div class="tile" id="narrative-panel">
-      <div class="tile-header">
-        <div class="tile-title">Key Insights</div>
-        <div class="tile-toolbar">
-          <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-          <button class="tool-btn" id="narrativeDownloadBtn" type="button" aria-label="Download narrative as text file" title="Download narrative as text file">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="tile-body">
-        <div id="narrative" aria-label="Key insights" aria-live="polite"></div>
-      </div>
-    </div>
-
-    <!-- Table row -->
-    <div class="data-row">
-      <!-- Table tile -->
-      <div class="tile" id="table-panel">
-        <div class="tile-header">
-          <div class="tile-title">Crosstab: Domain by Category</div>
-          <div class="tile-toolbar">
-            <button class="tool-btn" id="tableCopyBtn" type="button" aria-label="Copy crosstab as TSV" title="Copy crosstab as TSV (paste into Excel)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-            <button class="tool-btn" id="tableDownloadBtn" type="button" aria-label="Download crosstab as CSV" title="Download crosstab as CSV">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="tile-body">
-          <div class="table-inner-panel">
-            <div class="table-scroll">
-              <table id="table" aria-label="Risk counts by domain and category">
-                <thead></thead>
-                <tbody></tbody>
-              </table>
+          <div class="tile-body">
+            <div class="table-inner-panel">
+              <div class="table-scroll">
+                <table id="table" aria-label="Risk counts by domain and category">
+                  <thead></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -2218,17 +2344,21 @@
       return;
     }
 
+    // ── Summary block (visually distinct from domain grid) ───────────────
+    var summaryBlock = document.createElement('div');
+    summaryBlock.className = 'ki-summary-block';
+
     // Headline
     var hl = document.createElement('p');
     hl.className = 'ki-headline';
     hl.innerHTML = 'A total of <span class="ki-num">' + z.total + '</span> risks identified across business units';
-    elNarrative.appendChild(hl);
+    summaryBlock.appendChild(hl);
 
     // Intro prose (mirrors the PPT narrative text)
     var intro = document.createElement('p');
     intro.className = 'ki-intro';
     intro.textContent = 'Risk concentration is uneven, with strong clustering in a few key areas';
-    elNarrative.appendChild(intro);
+    summaryBlock.appendChild(intro);
 
     // Concentration line from grand_by_cat desc (>=2 nonzero cats)
     var gc = (z.grand_by_cat || []).filter(function(p) { return p[1] > 0; });
@@ -2239,7 +2369,7 @@
       var conc = document.createElement('p');
       conc.className = 'ki-concentration';
       conc.innerHTML = dispName(catLabel(gc[0][0])) + ' (' + n1 + ' risks) and ' + dispName(catLabel(gc[1][0])) + ' (' + n2 + ' risks) together account for <span class="ki-num">' + pct + '%</span> of total exposure';
-      elNarrative.appendChild(conc);
+      summaryBlock.appendChild(conc);
     }
 
     // Treated line
@@ -2248,7 +2378,7 @@
     var treatedLine = document.createElement('p');
     treatedLine.className = 'ki-concentration';
     treatedLine.innerHTML = '<span class="ki-num">' + treatedNum + '</span> of ' + z.total + ' risks (' + treatedPctNum + '%) are actively monitored (treated)';
-    elNarrative.appendChild(treatedLine);
+    summaryBlock.appendChild(treatedLine);
 
     // Aging line (only when untreated > 0 and aged_count > 0)
     var kiUntreated = (z.untreated != null) ? z.untreated : 0;
@@ -2260,16 +2390,27 @@
       var agingLine = document.createElement('p');
       agingLine.className = 'ki-concentration';
       agingLine.innerHTML = 'Untreated risks average <span class="ki-num">' + kiAvgAge + '</span> days old (median ' + kiMedianAge + 'd; oldest ' + kiOldestAge + 'd)';
-      elNarrative.appendChild(agingLine);
+      summaryBlock.appendChild(agingLine);
     }
 
-    // Section heading (as in the PPT write-up)
-    var section = document.createElement('h3');
-    section.className = 'ki-section';
-    section.textContent = 'Key Insights by Risk Domain';
-    elNarrative.appendChild(section);
+    elNarrative.appendChild(summaryBlock);
 
-    // Per-domain write-up blocks (same wording as narrative.py / the PPT)
+    // ── Divider before per-domain section ───────────────────────────────
+    var divider = document.createElement('div');
+    divider.className = 'ki-domain-divider';
+    var dividerLine1 = document.createElement('div');
+    dividerLine1.className = 'ki-domain-divider-line';
+    var dividerLabel = document.createElement('span');
+    dividerLabel.className = 'ki-domain-divider-label';
+    dividerLabel.textContent = 'Key Insights by Risk Domain';
+    var dividerLine2 = document.createElement('div');
+    dividerLine2.className = 'ki-domain-divider-line';
+    divider.appendChild(dividerLine1);
+    divider.appendChild(dividerLabel);
+    divider.appendChild(dividerLine2);
+    elNarrative.appendChild(divider);
+
+    // ── Per-domain card grid — ALL domains from z.by_domain (no cap) ─────
     var PHRASES = ['heavily concentrated in', 'primarily in', 'led by', 'distributed across'];
     var grid = document.createElement('div');
     grid.id = 'ki-domains';
@@ -2277,6 +2418,7 @@
       var dom = entry[0];
       var domTotal = entry[1];
       var domPct = (z.domain_pct && z.domain_pct[dom] != null) ? z.domain_pct[dom] : (z.total ? Math.round(100 * domTotal / z.total) : 0);
+      // ALL top_cats for this domain — no truncation
       var topCatsForDom = (z.top_cats && z.top_cats[dom]) || [];
       var phrase = PHRASES[Math.min(rank, PHRASES.length - 1)];
 
@@ -2292,18 +2434,28 @@
 
       var badge = document.createElement('span');
       badge.className = 'ki-pct-badge';
-      badge.textContent = domPct + '% of total risk' + (rank === 0 ? ' – highest' : '');
+      badge.textContent = domPct + '%' + (rank === 0 ? ' · highest' : '');
+
+      var countEl = document.createElement('span');
+      countEl.className = 'ki-count';
+      countEl.textContent = domTotal + ' risk' + (domTotal !== 1 ? 's' : '');
 
       topRow.appendChild(badge);
+      topRow.appendChild(countEl);
       card.appendChild(nameEl);
       card.appendChild(topRow);
 
+      // Phrase line (show even when no top_cats)
       var phraseEl = document.createElement('div');
       phraseEl.className = 'ki-phrase';
-      phraseEl.textContent = domTotal + ' risk' + (domTotal !== 1 ? 's' : '') +
-        (topCatsForDom.length ? ', ' + phrase + ':' : '');
+      if (topCatsForDom.length > 0) {
+        phraseEl.textContent = phrase + ':';
+      } else {
+        phraseEl.textContent = 'no category breakdown available';
+      }
       card.appendChild(phraseEl);
 
+      // ALL chips — no truncation; show count per chip
       if (topCatsForDom.length > 0) {
         var chips = document.createElement('div');
         chips.className = 'ki-chips';
@@ -2415,7 +2567,20 @@
     if (!z) return;
     showData();
     var h = $('zone-heading');
-    if (h) h.textContent = currentZone + ' — Risk Insights';
+    if (h) {
+      // Report header: large zone name + muted subline + status
+      var genAt = payload.generated_at || null;
+      var genStr = genAt ? fmtTime(genAt) : '';
+      var sourceStr = payload.source ? payload.source : '';
+      var sublineParts = ['Risk Insights'];
+      if (genStr) sublineParts.push('till ' + genStr);
+      h.innerHTML =
+        '<div class="zone-header-name">' + (currentZone === 'Overall' ? 'All Zones — Overall' : currentZone + ' Zone') + '</div>' +
+        '<div class="zone-header-subline">' +
+          '<span>' + sublineParts.join(' · ') + '</span>' +
+          (sourceStr ? '<span class="zone-header-status">' + sourceStr + '</span>' : '') +
+        '</div>';
+    }
     renderKpis(z);
     renderPie(z);
     renderBar(z);
