@@ -357,3 +357,14 @@ def test_catfile_download_disposition(monkeypatch, tmp_path):
     # Verify other paths return None
     extra_other = dashboard._extra_header("/api/config", 200)
     assert extra_other is None
+
+
+def test_payload_zone_set_has_gro():
+    rows = [{"ID": "1", "Organization": "BEES", "Category": "Security",
+             "Cat": "NCI", "Stage": "Monitoring"}]
+    p = dashboard.build_payload(rows, view="V",
+                                generated_at=datetime.datetime(2026, 8, 7, 6, 0))
+    assert set(p["zones"]) == {"GHQ","AFR","SAZ","MAZ","NAZ","APAC","EUR","GRO","Overall"}
+    gro = p["zones"]["GRO"]
+    assert gro["total"] == 1 and gro["treated"] == 1 and gro["treated_pct"] == 100
+    assert isinstance(gro["by_stage"], list)

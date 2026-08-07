@@ -35,6 +35,10 @@ def build_narrative(stats, date_str):
         lines.append(f"{_disp(c1)} ({n1} risks) and {_disp(c2)} ({n2} risks) "
                      f"together account for {pct}% of total exposure")
 
+    if getattr(stats, "treated", 0) is not None and total:
+        lines.append(f"{stats.treated} of {total} risks "
+                     f"({stats.treated_pct}%) are actively monitored (treated)")
+
     lines.append("")
     lines.append("Key Insights by Risk Domain")
     for rank, (dom, dcount) in enumerate(stats.by_domain):
