@@ -1549,7 +1549,9 @@
   ];
 
   function seriesColor(i, cat) {
-    return cat === '(blank)' ? '#797775' : PALETTE[i % PALETTE.length];
+    // For top-5 datasets: use distinct palette color by index (not seriesColor's special case).
+    // Only the folded "Other" series uses gray '#797775'.
+    return PALETTE[i % PALETTE.length];
   }
 
   // ── Aging color ramp: #E8C810 -> #FFB74D -> #F0736A (v/maxv 0->0.5->1) ──
@@ -1866,6 +1868,7 @@
   }
 
   // ── Bar rendering ─────────────────────────────────────────────────────────
+  // Chart shows Top-5 categories + Other; CSV export and the crosstab table intentionally keep ALL categories.
   function renderBar(z) {
     if (barChart) { barChart.destroy(); barChart = null; }
     var domains = (z.by_domain || []).map(function(p) { return p[0]; });
@@ -1936,6 +1939,18 @@
               label: function(item) {
                 var tot = colTotals[item.dataIndex] || 0;
                 return ' ' + item.dataset.label + ': ' + item.parsed.y + ' (of ' + tot + ')';
+              },
+              afterLabel: function(item) {
+                // Show folded category breakdown when hovering "Other" series
+                if (item.dataset.label === 'Other' && otherCats.length > 0) {
+                  var dom = domains[item.dataIndex];
+                  var breakdown = otherCats.map(function(cat) {
+                    var cnt = (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0;
+                    return catLabel(cat) + ': ' + cnt;
+                  });
+                  return breakdown.join('\n');
+                }
+                return '';
               },
               footer: function(items) { return 'Total: ' + (colTotals[items[0].dataIndex] || 0); }
             }
@@ -2372,6 +2387,7 @@
     return s;
   }
 
+  // Chart shows Top-5 categories + Other; CSV export and the crosstab table intentionally keep ALL categories.
   function tableTsv(z) {
     var ac = activeCatsFor(z);
     var rows = [['Domain'].concat(ac.map(catLabel)).concat(['Total']).join('\t')];
