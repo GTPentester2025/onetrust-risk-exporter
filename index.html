@@ -11,118 +11,79 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
-    /* ── Design tokens (Power BI dark, single theme) ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       1. DESIGN TOKENS — flat enterprise BI, dark + gold. No glass.
+       ═══════════════════════════════════════════════════════════════════════ */
     :root {
-      --canvas: #1b1a19;
-      --tile: #252423;
-      --tile-2: #2f2e2d;
-      --fg: #f3f2f1;
-      --fg-muted: #c8c6c4;
-      --fg-dim: #9aa1ac;
-      --border: #3b3a39;
-      --gold: #e8c810;
+      /* Surfaces (solid) */
+      --canvas:   #0f0d0a;   /* page */
+      --tile:     #181512;   /* cards */
+      --tile-2:   #201c17;   /* raised (inputs, inner panels) */
+      --tile-3:   #262119;   /* hover / stripes base */
+      /* Ink */
+      --fg:       #f3f2f1;   /* primary text */
+      --fg-muted: #cfccc6;   /* body — >=4.5:1 on #181512 */
+      --fg-dim:   #a7a29a;   /* labels/captions — >=4.5:1 on #181512 */
+      /* Lines */
+      --border:      rgba(255,255,255,0.07);
+      --border-2:    rgba(255,255,255,0.12);
+      /* Accents */
+      --gold:      #e8c810;
       --gold-deep: #c99a1e;
-      --live: #34d399;
-      --danger: #f0736a;
+      --gold-soft: rgba(232,200,16,0.12);
+      --live:      #34d399;
+      --danger:    #f0736a;
+      /* Shape */
       --radius: 8px;
-      --maxw: 1240px;
+      --radius-sm: 6px;
+      --maxw: 1400px;
       --font: "Fira Sans", "Segoe UI", system-ui, sans-serif;
       --mono: "Fira Code", ui-monospace, Consolas, monospace;
-      /* ── Glass tokens ── */
-      --glass: rgba(255,255,255,0.05);
-      --glass-border: rgba(255,255,255,0.06);
-      --glass-blur: blur(14px) saturate(1.2);
-      --panel: rgba(20,16,10,0.55);
-      /* ── Shadow token (single) ── */
-      --shadow: 0 4px 16px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.05);
-      /* ── Type scale (6 tokens) ── */
-      --fs-xs:   0.72rem;   /* <=0.72: badges, chips, sort indicator, labels */
-      --fs-sm:   0.80rem;   /* 0.73-0.85: tabs, buttons, table, ki-section */
-      --fs-base: 0.90rem;   /* 0.86-0.95: narrative, product mark, zone heading */
-      --fs-md:   1.00rem;   /* 0.96-1.10: banner dismiss, empty h2 */
-      --fs-lg:   1.25rem;   /* 1.11-1.4: (reserved / future headings) */
-      --fs-kpi:  1.75rem;   /* >=1.5: KPI values */
+      /* Type scale (6 tokens) */
+      --fs-xs:   0.70rem;
+      --fs-sm:   0.78rem;
+      --fs-base: 0.86rem;
+      --fs-md:   0.98rem;
+      --fs-lg:   1.15rem;
+      --fs-kpi:  1.55rem;
     }
 
-    /* ── Reset & base ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       2. RESET & BASE
+       ═══════════════════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html { font-size: 14px; }
 
     body {
       font-family: var(--font);
-      background: linear-gradient(160deg, #14100a, #0a0806);
+      background: var(--canvas);
       color: var(--fg);
-      line-height: 1.55;
+      line-height: 1.45;
       min-height: 100vh;
-      position: relative;
     }
 
-    /* ── Ambient blob layer ── */
-    #bg-blobs {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-
-    #bg-blobs::before,
-    #bg-blobs::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-    }
-
-    #bg-blobs::before {
-      width: 60vw;
-      height: 60vw;
-      top: -20%;
-      left: -15%;
-      background: radial-gradient(ellipse at center, rgba(232,200,16,0.09) 0%, transparent 70%);
-    }
-
-    #bg-blobs::after {
-      width: 50vw;
-      height: 50vw;
-      bottom: -15%;
-      right: -10%;
-      background: radial-gradient(ellipse at center, rgba(52,211,153,0.06) 0%, transparent 70%);
-    }
-
-    /* ── All content above blobs ── */
-    #appbar,
-    #toast-container,
-    #banner,
-    #main,
-    #settings-scrim {
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ── Focus visible ── */
     :focus-visible {
       outline: 2px solid var(--gold);
       outline-offset: 2px;
       border-radius: 4px;
     }
 
-    /* ── App bar ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       3. TOP BAR (slim, sticky)
+       ═══════════════════════════════════════════════════════════════════════ */
     #appbar {
-      background: var(--glass);
-      -webkit-backdrop-filter: var(--glass-blur);
-      backdrop-filter: var(--glass-blur);
-      border-bottom: 1px solid var(--glass-border);
-      box-shadow: 0 2px 8px rgba(0,0,0,.35);
-      padding: 0 16px;
+      background: #131029;
+      background: linear-gradient(180deg, #16130d, #141109);
+      border-bottom: 1px solid var(--border);
+      padding: 0 18px;
       display: flex;
       align-items: center;
       gap: 0;
       position: sticky;
       top: 0;
       z-index: 100;
-      height: 48px;
+      height: 54px;
     }
 
     #product-mark {
@@ -141,50 +102,51 @@
       gap: 8px;
     }
 
-    /* ── Zone tab strip ── */
+    /* ── Zone pills: compact segmented control ── */
     #zones {
       display: flex;
-      align-items: stretch;
-      gap: 0;
+      align-items: center;
+      gap: 2px;
       flex: 1;
       overflow-x: auto;
       scrollbar-width: none;
+      padding: 0 14px;
       height: 100%;
-      padding: 0 8px;
     }
 
     #zones::-webkit-scrollbar { display: none; }
 
     .zone-tab {
-      height: 100%;
-      padding: 0 14px;
-      border: none;
-      border-bottom: 3px solid transparent;
+      height: 30px;
+      padding: 0 13px;
+      border: 1px solid transparent;
+      border-radius: 999px;
       background: transparent;
-      color: var(--fg-muted);
+      color: var(--fg-dim);
       font-family: var(--mono);
       font-size: var(--fs-sm);
       font-weight: 500;
+      letter-spacing: 0.01em;
       cursor: pointer;
       white-space: nowrap;
-      transition: color 200ms, border-color 200ms;
+      transition: color 150ms, background 150ms, border-color 150ms;
       flex-shrink: 0;
-      position: relative;
     }
 
     .zone-tab:hover {
       color: var(--fg);
+      background: var(--tile-2);
     }
 
     .zone-tab:focus-visible {
       outline: 2px solid var(--gold);
-      outline-offset: -2px;
-      border-radius: 3px;
+      outline-offset: 1px;
     }
 
     .zone-tab[aria-selected="true"] {
       color: var(--gold);
-      border-bottom-color: var(--gold);
+      border-color: rgba(232,200,16,0.45);
+      background: var(--gold-soft);
       font-weight: 700;
     }
 
@@ -411,43 +373,61 @@
 
     #banner-dismiss:hover { color: var(--fg); }
 
-    /* ── Main canvas ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       5. REPORT CANVAS — 12-col dense grid
+       ═══════════════════════════════════════════════════════════════════════ */
     #main {
       max-width: var(--maxw);
       margin: 0 auto;
-      padding: 16px 24px 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
+      padding: 14px 18px 32px;
     }
 
-    /* ── Tile ── */
+    #insights {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .col-3  { grid-column: span 3; }
+    .col-4  { grid-column: span 4; }
+    .col-5  { grid-column: span 5; }
+    .col-8  { grid-column: span 8; }
+    .col-12 { grid-column: 1 / -1; }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       6. CARD (flat surface)
+       ═══════════════════════════════════════════════════════════════════════ */
     .tile {
-      background: var(--glass);
-      -webkit-backdrop-filter: var(--glass-blur);
-      backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
+      background: var(--tile);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .tile-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      min-height: 44px;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      min-height: 34px;
+      flex-shrink: 0;
     }
 
     .tile-title {
       font-family: var(--font);
-      font-size: var(--fs-xs);
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       color: var(--fg-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .tile-toolbar {
@@ -457,76 +437,78 @@
       opacity: 0;
       transition: opacity 150ms;
       margin-left: auto;
+      flex-shrink: 0;
     }
 
-    .tile:hover .tile-toolbar {
-      opacity: 1;
-    }
+    .tile:hover .tile-toolbar,
+    .tile:focus-within .tile-toolbar { opacity: 1; }
 
     .tool-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       background: var(--tile-2);
-      color: var(--fg-muted);
+      color: var(--fg-dim);
       cursor: pointer;
-      transition: color 150ms, border-color 150ms, background 150ms;
+      transition: color 150ms, border-color 150ms;
       padding: 0;
     }
 
-    .tool-btn:hover {
-      color: var(--gold);
-      border-color: var(--fg-dim);
-    }
+    .tool-btn:hover { color: var(--gold); border-color: var(--border-2); }
 
     .tile-body {
-      padding: 16px;
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
-    /* ── KPI row ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       7. KPI CARDS — 5 across, compact
+       ═══════════════════════════════════════════════════════════════════════ */
     #kpis {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
     }
 
     .kpi-card {
-      background: var(--glass);
-      -webkit-backdrop-filter: var(--glass-blur);
-      backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
-      border-top: 2px solid var(--gold-deep);
-      box-shadow: var(--shadow);
-      padding: 16px;
+      background: var(--tile);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 13px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      min-height: 106px;
+      gap: 3px;
+      min-height: 92px;
+      justify-content: center;
+      position: relative;
     }
 
-    .kpi-card:hover { border-top-color: var(--gold); }
-
-    .kpi-card.kpi-live {
-      border-top-color: var(--live);
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 10px; bottom: 10px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--gold-deep);
     }
 
-    .kpi-card.kpi-live:hover { border-top-color: #6ee7b7; }
-
-    .kpi-card.kpi-live .kpi-value {
-      color: var(--live);
-    }
+    .kpi-card.kpi-live::before { background: var(--live); }
+    .kpi-card.kpi-live .kpi-value { color: var(--live); }
 
     .kpi-label {
       font-size: var(--fs-xs);
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       color: var(--fg-dim);
+      line-height: 1.2;
     }
 
     .kpi-value {
@@ -534,8 +516,7 @@
       font-size: var(--fs-kpi);
       font-weight: 700;
       color: var(--gold);
-      line-height: 1.1;
-      text-shadow: 0 1px 2px rgba(0,0,0,.5);
+      line-height: 1.05;
       font-variant-numeric: tabular-nums;
     }
 
@@ -543,221 +524,162 @@
       font-size: var(--fs-xs);
       color: var(--fg-dim);
       font-weight: 400;
-      margin-top: 2px;
+      line-height: 1.3;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* ── Chart row ── */
-    .chart-row {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 16px;
-      align-items: stretch;
+    /* ═══════════════════════════════════════════════════════════════════════
+       8. CHART CELLS — fixed body heights so grid rows align
+       ═══════════════════════════════════════════════════════════════════════ */
+    .chart-inner-panel {
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
-
-    /* ── Chart tiles: lock height so zone switch never reflows ── */
-    #pie-panel   { min-height: 360px; display: flex; flex-direction: column; }
-    #bar-panel   { min-height: 360px; display: flex; flex-direction: column; }
-    #treated-panel { min-height: 340px; display: flex; flex-direction: column; }
-    #aging-panel  { min-height: 340px; display: flex; flex-direction: column; }
-    #bucket-panel { min-height: 340px; display: flex; flex-direction: column; }
-
-    #pie-panel .tile-body,
-    #bar-panel .tile-body,
-    #treated-panel .tile-body,
-    #aging-panel .tile-body,
-    #bucket-panel .tile-body { flex: 1; display: flex; flex-direction: column; }
-
-    #pie-panel .chart-inner-panel,
-    #bar-panel .chart-inner-panel,
-    #treated-panel .chart-inner-panel { flex: 1; display: flex; flex-direction: column; }
-
-    #pie-panel .chart-container,
-    #bar-panel .chart-container,
-    #treated-panel .chart-container { flex: 1; }
 
     .chart-container {
       position: relative;
       width: 100%;
+      flex: 1;
+      min-height: 0;
     }
 
-    #pie-container { height: 280px; }
-    #bar-container { height: 280px; }
-    #treated-container { height: 260px; }
+    /* Row 2 visuals ~300px body */
+    #pie-panel .tile-body,
+    #bar-panel .tile-body,
+    #treated-panel .tile-body { height: 300px; }
 
-    /* ── Inner panel: crisp data over glass ── */
-    .chart-inner-panel,
-    .table-inner-panel {
-      background: var(--panel);
-      border-radius: 10px;
-      padding: 10px;
-    }
+    /* Row 3 visuals ~280px body */
+    #aging-panel .tile-body,
+    #bucket-panel .tile-body { height: 280px; }
 
+    /* aging/bucket inner IS the canvas host (JS writes canvas directly) */
     #aging-inner,
     #bucket-inner {
-      height: 260px;
-    }
-
-    /* ── Treatment & Aging 3-col row ── */
-    .treatment-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px;
-      align-items: stretch;
-    }
-
-    .treatment-row > .tile {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .treatment-row > .tile .tile-body {
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px;
       flex: 1;
-      display: flex;
-      flex-direction: column;
+      min-height: 0;
+      position: relative;
     }
 
-    .treatment-row > .tile .chart-inner-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+    #treatedChart { margin: 0 auto; }
 
-    .treatment-row > .tile .chart-container {
-      flex: 1;
-    }
-
-    #treatedChart {
-      max-width: 420px;
-      margin: 0 auto;
-    }
-
-
-    .treated-empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 260px;
-      color: var(--fg-dim);
-      font-size: var(--fs-base);
-      font-style: italic;
-    }
-
+    .treated-empty,
     .aging-empty {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 260px;
+      height: 100%;
       color: var(--fg-dim);
-      font-size: var(--fs-base);
+      font-size: var(--fs-sm);
       font-style: italic;
+      text-align: center;
     }
 
-    @media (max-width: 1024px) {
-      .treatment-row { grid-template-columns: 1fr 1fr; }
-    }
-
-    @media (max-width: 680px) {
-      .treatment-row { grid-template-columns: 1fr; }
-    }
-
-    /* ── Narrative (export text; tile is #narrative-panel = Key Insights) ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       9. KEY INSIGHTS — executive summary (left) + domain grid (right)
+       ═══════════════════════════════════════════════════════════════════════ */
     #narrative {
       font-size: var(--fs-base);
-      line-height: 1.55;
+      line-height: 1.45;
       color: var(--fg-muted);
-    }
-
-    /* ── Key Insights panel ── */
-    .ki-headline {
-      font-size: var(--fs-base);
-      color: var(--fg-muted);
-      margin-bottom: 6px;
-      line-height: 1.5;
+      display: grid;
+      grid-template-columns: 4fr 8fr;
+      gap: 14px;
+      align-items: start;
     }
 
     .ki-num {
       font-family: var(--mono);
       color: var(--gold);
-      font-size: 1.2em;
       font-weight: 700;
+    }
+
+    /* Left column — Executive summary */
+    .ki-summary-block {
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ki-headline {
+      font-size: var(--fs-md);
+      color: var(--fg);
+      line-height: 1.35;
+      font-weight: 600;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
     }
 
     .ki-intro {
       font-size: var(--fs-sm);
-      color: var(--fg-muted);
-      margin-bottom: 2px;
+      color: var(--fg-dim);
+      font-style: italic;
     }
 
     .ki-concentration {
       font-size: var(--fs-sm);
       color: var(--fg-muted);
-      margin-bottom: 12px;
+      line-height: 1.4;
+      padding-left: 12px;
+      position: relative;
     }
 
-    .ki-section {
-      font-size: var(--fs-xs);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--fg-dim);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 6px;
-      margin: 4px 0 10px;
+    .ki-concentration::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 7px;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold-deep);
     }
 
-    .ki-phrase {
-      font-size: var(--fs-sm);
-      color: var(--fg-muted);
-    }
-
-    /* ── KI summary block (above domain grid) ── */
-    .ki-summary-block {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--glass-border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin-bottom: 0;
-    }
-
+    /* Right column — domain divider + card grid */
     .ki-domain-divider {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin: 16px 0 10px;
+      margin-bottom: 10px;
     }
 
-    .ki-domain-divider-line {
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+    .ki-domain-divider-line { flex: 1; height: 1px; background: var(--border); }
 
     .ki-domain-divider-label {
-      font-family: var(--mono);
-      font-size: var(--fs-xs);
+      font-family: var(--font);
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.12em;
       color: var(--fg-dim);
       white-space: nowrap;
     }
 
     #ki-domains {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 10px;
-      margin-top: 4px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
     }
 
     .ki-domain-card {
-      background: var(--panel);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      padding: 10px 12px;
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -765,9 +687,8 @@
 
     .ki-domain-name {
       font-weight: 600;
-      color: var(--fg-muted);
+      color: var(--fg);
       font-size: var(--fs-base);
-      letter-spacing: -0.01em;
     }
 
     .ki-domain-top {
@@ -779,7 +700,7 @@
 
     .ki-pct-badge {
       display: inline-block;
-      background: rgba(232,200,16,0.12);
+      background: var(--gold-soft);
       border: 1px solid rgba(232,200,16,0.25);
       border-radius: 999px;
       padding: 1px 8px;
@@ -789,16 +710,11 @@
       color: var(--gold);
     }
 
-    .ki-count {
-      font-size: var(--fs-sm);
-      color: var(--fg-muted);
-    }
+    .ki-count { font-size: var(--fs-sm); color: var(--fg-dim); }
 
-    .ki-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
+    .ki-phrase { font-size: var(--fs-sm); color: var(--fg-dim); }
+
+    .ki-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 
     .ki-chip {
       display: inline-block;
@@ -810,16 +726,24 @@
       white-space: nowrap;
     }
 
-    .ki-zero {
-      font-size: var(--fs-base);
-      color: var(--fg-muted);
-      font-style: italic;
+    .ki-zero { font-size: var(--fs-base); color: var(--fg-muted); font-style: italic; }
+
+    /* Divider group wrapper so it can span the right column cleanly */
+    .ki-domain-wrap { min-width: 0; }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       10. CROSSTAB TABLE
+       ═══════════════════════════════════════════════════════════════════════ */
+    .table-inner-panel {
+      background: var(--tile-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
     }
 
-    /* ── Table ── */
     .table-scroll {
       overflow: auto;
-      max-height: 420px;
+      max-height: 360px;
       -webkit-overflow-scrolling: touch;
     }
 
@@ -831,10 +755,10 @@
     }
 
     #table thead { position: sticky; top: 0; z-index: 2; }
-    #table thead th { position: sticky; top: 0; z-index: 2; background: rgba(20,16,10,0.85); }
+    #table thead th { position: sticky; top: 0; z-index: 2; background: #14110c; }
 
     #table th {
-      background: rgba(20,16,10,0.85);
+      background: #14110c;
       color: var(--fg-muted);
       font-family: var(--mono);
       font-size: var(--fs-xs);
@@ -884,47 +808,18 @@
     }
 
     #table tr:last-child td { border-bottom: none; }
-    #table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
-    #table tbody tr:hover td { background: rgba(232,200,16,0.08); }
+    #table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    #table tbody tr:hover td { background: var(--gold-soft); }
     #table td.total-col { font-family: var(--mono); font-weight: 700; color: var(--gold); }
     #table th.total-col { color: var(--gold); }
 
-    /* ── Table row (full-width, narrative moved above) ── */
-    .data-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    /* ── Table panel: clipped tile, scroll inside .table-scroll ── */
     #table-panel { overflow: hidden; }
 
-    /* ── Section labels (report banding) ── */
-    .section-label {
-      font-family: var(--font);
-      font-size: var(--fs-xs);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--fg-dim);
-      padding: 0 2px 6px;
-      margin-bottom: 10px;
-      border-bottom: 1px solid rgba(59,58,57,0.5);
-    }
-
-    /* ── Section spacing between bands ── */
-    .section-band {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* ── Zone heading — report header ── */
-    #zone-heading {
-      padding: 4px 0 12px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 4px;
-    }
+    /* ═══════════════════════════════════════════════════════════════════════
+       11. REPORT INFO CARD (Row 3, span 3) — holds zone header/summary
+       ═══════════════════════════════════════════════════════════════════════ */
+    #zone-heading .tile-body,
+    #report-info .tile-body { gap: 10px; justify-content: flex-start; }
 
     .zone-header-name {
       font-family: var(--mono);
@@ -938,20 +833,22 @@
     .zone-header-subline {
       font-size: var(--fs-sm);
       color: var(--fg-dim);
-      margin-top: 3px;
+      margin-top: 6px;
       display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 4px;
     }
 
     .zone-header-status {
       font-size: var(--fs-xs);
       color: var(--fg-dim);
       font-family: var(--mono);
+      word-break: break-all;
     }
 
-    /* ── Empty state ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       12. EMPTY STATE
+       ═══════════════════════════════════════════════════════════════════════ */
     #empty {
       display: flex;
       flex-direction: column;
@@ -960,25 +857,17 @@
       gap: 14px;
       padding: 64px 24px;
       text-align: center;
-      background: var(--glass);
-      -webkit-backdrop-filter: var(--glass-blur);
-      backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
+      background: var(--tile);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
     }
 
     #empty h2 { font-size: var(--fs-md); font-weight: 600; color: var(--fg-muted); }
-    #empty p { font-size: var(--fs-base); max-width: 360px; color: var(--fg-muted); }
+    #empty p { font-size: var(--fs-base); max-width: 360px; color: var(--fg-dim); }
 
-    /* ── Insights container ── */
-    #insights {
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-    }
-
-    /* ── Settings modal ── */
+    /* ═══════════════════════════════════════════════════════════════════════
+       13. SETTINGS MODAL
+       ═══════════════════════════════════════════════════════════════════════ */
     #settings-scrim {
       display: none;
       position: fixed;
@@ -994,12 +883,10 @@
     }
 
     #settings {
-      background: var(--glass);
-      -webkit-backdrop-filter: var(--glass-blur);
-      backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
+      background: var(--tile);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
       width: 440px;
       max-width: calc(100vw - 32px);
       max-height: calc(100vh - 64px);
@@ -1229,19 +1116,31 @@
     /* ── Utility ── */
     .hidden { display: none !important; }
 
-    /* ── Responsive ── */
-    @media (max-width: 900px) {
-      .chart-row { grid-template-columns: 1fr; }
-      .data-row  { grid-template-columns: 1fr; }
+    /* ═══════════════════════════════════════════════════════════════════════
+       14. RESPONSIVE — 12-col collapses below 1100px, no horizontal scroll
+       ═══════════════════════════════════════════════════════════════════════ */
+    @media (max-width: 1200px) {
+      #kpis { grid-template-columns: repeat(3, 1fr); }
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 1100px) {
+      #insights { grid-template-columns: 1fr; }
+      .col-3, .col-4, .col-5, .col-8, .col-12 { grid-column: 1 / -1; }
+      #narrative { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
       #appbar { padding: 0 10px; }
       #main { padding: 12px 12px 24px; }
-      #kpis { grid-template-columns: 1fr 1fr; }
+      #kpis { grid-template-columns: repeat(2, 1fr); }
+      #pie-panel .tile-body,
+      #bar-panel .tile-body,
+      #treated-panel .tile-body,
+      #aging-panel .tile-body,
+      #bucket-panel .tile-body { height: 260px; }
     }
 
-    @media (max-width: 360px) {
+    @media (max-width: 420px) {
       #kpis { grid-template-columns: 1fr; }
     }
 
@@ -1256,10 +1155,7 @@
 </head>
 <body>
 
-<!-- ── Ambient blob layer ── -->
-<div id="bg-blobs" aria-hidden="true"></div>
-
-<!-- ── App bar ── -->
+<!-- ── Top bar ── -->
 <header id="appbar">
   <!-- Product mark -->
   <div id="product-mark">
@@ -1357,49 +1253,36 @@
     <p>Open Settings, connect your OneTrust credentials, then click Refresh to load risk insights.</p>
   </div>
 
-  <!-- Insights (hidden until data loaded) -->
+  <!-- Insights (hidden until data loaded) — 12-col report grid -->
   <div id="insights" class="hidden">
 
-    <!-- Zone heading — report header band -->
-    <div id="zone-heading"></div>
-
-    <!-- ── SECTION: OVERVIEW ── -->
-    <div class="section-band">
-      <div class="section-label">Overview</div>
-
-      <!-- KPI tile -->
-      <div class="tile" id="kpis-wrap">
-        <div class="tile-header">
-          <div class="tile-title">Key Metrics</div>
-          <div class="tile-toolbar">
-            <button class="tool-btn" id="kpisCopyBtn" type="button" aria-label="Copy KPI summary" title="Copy KPI summary">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-            <button class="tool-btn" id="kpisDownloadBtn" type="button" aria-label="Download KPI panel as PNG" title="Download KPI panel as PNG">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </button>
-          </div>
+    <!-- ── ROW 1: KPI strip (span 12; renders 5 cards) ── -->
+    <div class="tile col-12" id="kpis-wrap">
+      <div class="tile-header">
+        <div class="tile-title">Key Metrics</div>
+        <div class="tile-toolbar">
+          <button class="tool-btn" id="kpisCopyBtn" type="button" aria-label="Copy KPI summary" title="Copy KPI summary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="kpisDownloadBtn" type="button" aria-label="Download KPI panel as PNG" title="Download KPI panel as PNG">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
         </div>
-        <div class="tile-body">
-          <div id="kpis" aria-label="Key metrics"></div>
-        </div>
+      </div>
+      <div class="tile-body">
+        <div id="kpis" aria-label="Key metrics"></div>
       </div>
     </div>
 
-    <!-- ── SECTION: COMPOSITION ── -->
-    <div class="section-band">
-      <div class="section-label">Composition</div>
-
-      <!-- 2-col chart row: pie | bar -->
-      <div class="chart-row">
-        <!-- Pie tile -->
-        <div class="tile" id="pie-panel">
+    <!-- ── ROW 2: pie (4) · bar (5) · treated (3) ── -->
+    <!-- Pie tile -->
+    <div class="tile col-4" id="pie-panel">
           <div class="tile-header">
             <div class="tile-title">Risks by Domain</div>
             <div class="tile-toolbar">
@@ -1426,8 +1309,8 @@
           </div>
         </div>
 
-        <!-- Bar tile -->
-        <div class="tile" id="bar-panel">
+    <!-- Bar tile -->
+    <div class="tile col-5" id="bar-panel">
           <div class="tile-header">
             <div class="tile-title">Domain x Category Breakdown</div>
             <div class="tile-toolbar">
@@ -1445,25 +1328,17 @@
               </button>
             </div>
           </div>
-          <div class="tile-body">
-            <div class="chart-inner-panel">
-              <div id="bar-container" class="chart-container">
-                <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
-              </div>
-            </div>
+      <div class="tile-body">
+        <div class="chart-inner-panel">
+          <div id="bar-container" class="chart-container">
+            <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ── SECTION: TREATMENT & AGING ── -->
-    <div class="section-band">
-      <div class="section-label">Treatment &amp; Aging</div>
-
-      <!-- 3-col treatment row: treated | aging | buckets -->
-      <div class="treatment-row">
-        <!-- Risk Treatment tile -->
-        <div class="tile" id="treated-panel">
+    <!-- Risk Treatment tile -->
+    <div class="tile col-3" id="treated-panel">
           <div class="tile-header">
             <div class="tile-title">Risk Treatment</div>
             <div class="tile-toolbar"></div>
@@ -1477,40 +1352,46 @@
           </div>
         </div>
 
-        <!-- Risk Aging by Domain tile -->
-        <div class="tile" id="aging-panel">
-          <div class="tile-header">
-            <div class="tile-title">Risk Aging by Domain</div>
-            <div class="tile-toolbar"></div>
-          </div>
-          <div class="tile-body">
-            <div class="chart-inner-panel" id="aging-inner">
-              <canvas id="agingChart" role="img" aria-label="Horizontal bar chart: average untreated risk age by domain"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Aging Buckets tile -->
-        <div class="tile" id="bucket-panel">
-          <div class="tile-header">
-            <div class="tile-title">Aging Buckets</div>
-            <div class="tile-toolbar"></div>
-          </div>
-          <div class="tile-body">
-            <div class="chart-inner-panel" id="bucket-inner">
-              <canvas id="bucketChart" role="img" aria-label="Bar chart: risk counts by aging bucket"></canvas>
-            </div>
-          </div>
+    <!-- ── ROW 3: aging (5) · buckets (4) · report info (3) ── -->
+    <!-- Risk Aging by Domain tile -->
+    <div class="tile col-5" id="aging-panel">
+      <div class="tile-header">
+        <div class="tile-title">Risk Aging by Domain</div>
+        <div class="tile-toolbar"></div>
+      </div>
+      <div class="tile-body">
+        <div class="chart-inner-panel" id="aging-inner">
+          <canvas id="agingChart" role="img" aria-label="Horizontal bar chart: average untreated risk age by domain"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- ── SECTION: KEY INSIGHTS ── -->
-    <div class="section-band">
-      <div class="section-label">Key Insights</div>
+    <!-- Aging Buckets tile -->
+    <div class="tile col-4" id="bucket-panel">
+      <div class="tile-header">
+        <div class="tile-title">Aging Buckets</div>
+        <div class="tile-toolbar"></div>
+      </div>
+      <div class="tile-body">
+        <div class="chart-inner-panel" id="bucket-inner">
+          <canvas id="bucketChart" role="img" aria-label="Bar chart: risk counts by aging bucket"></canvas>
+        </div>
+      </div>
+    </div>
 
-      <!-- Narrative tile — full width -->
-      <div class="tile" id="narrative-panel">
+    <!-- Report info card (holds zone header/summary) -->
+    <div class="tile col-3" id="report-info">
+      <div class="tile-header">
+        <div class="tile-title">Report</div>
+        <div class="tile-toolbar"></div>
+      </div>
+      <div class="tile-body">
+        <div id="zone-heading"></div>
+      </div>
+    </div>
+
+    <!-- ── ROW 4: Executive summary + domain insights (span 12) ── -->
+    <div class="tile col-12" id="narrative-panel">
         <div class="tile-header">
           <div class="tile-title">Insights by Risk Domain</div>
           <div class="tile-toolbar">
@@ -1528,19 +1409,13 @@
             </button>
           </div>
         </div>
-        <div class="tile-body">
-          <div id="narrative" aria-label="Key insights" aria-live="polite"></div>
-        </div>
+      <div class="tile-body">
+        <div id="narrative" aria-label="Key insights" aria-live="polite"></div>
       </div>
     </div>
 
-    <!-- ── SECTION: DETAIL ── -->
-    <div class="section-band">
-      <div class="section-label">Detail</div>
-
-      <!-- Table tile — full width, scroll-contained -->
-      <div class="data-row">
-        <div class="tile" id="table-panel">
+    <!-- ── ROW 5: Crosstab table (span 12) ── -->
+    <div class="tile col-12" id="table-panel">
           <div class="tile-header">
             <div class="tile-title">Crosstab: Domain by Category</div>
             <div class="tile-toolbar">
@@ -1558,15 +1433,13 @@
               </button>
             </div>
           </div>
-          <div class="tile-body">
-            <div class="table-inner-panel">
-              <div class="table-scroll">
-                <table id="table" aria-label="Risk counts by domain and category">
-                  <thead></thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
+      <div class="tile-body">
+        <div class="table-inner-panel">
+          <div class="table-scroll">
+            <table id="table" aria-label="Risk counts by domain and category">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1784,7 +1657,7 @@
     var tmp = document.createElement('canvas');
     tmp.width = w; tmp.height = h;
     var ctx = tmp.getContext('2d');
-    ctx.fillStyle = '#252423';
+    ctx.fillStyle = '#181512';
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(chartCanvas, 0, 0);
     return tmp.toDataURL('image/png');
@@ -2460,6 +2333,10 @@
 
     elNarrative.appendChild(summaryBlock);
 
+    // ── Right column wrapper: divider + domain card grid ────────────────
+    var rightCol = document.createElement('div');
+    rightCol.className = 'ki-domain-wrap';
+
     // ── Divider before per-domain section ───────────────────────────────
     var divider = document.createElement('div');
     divider.className = 'ki-domain-divider';
@@ -2473,7 +2350,7 @@
     divider.appendChild(dividerLine1);
     divider.appendChild(dividerLabel);
     divider.appendChild(dividerLine2);
-    elNarrative.appendChild(divider);
+    rightCol.appendChild(divider);
 
     // ── Per-domain card grid — ALL domains from z.by_domain (no cap) ─────
     var PHRASES = ['heavily concentrated in', 'primarily in', 'led by', 'distributed across'];
@@ -2535,7 +2412,8 @@
 
       grid.appendChild(card);
     });
-    elNarrative.appendChild(grid);
+    rightCol.appendChild(grid);
+    elNarrative.appendChild(rightCol);
   }
 
   // ── Table rendering ───────────────────────────────────────────────────────
@@ -2984,7 +2862,7 @@
     $('kpisDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
-      html2canvas($('kpis-wrap'), { backgroundColor: '#252423', scale: 2, useCORS: true }).then(function(c) {
+      html2canvas($('kpis-wrap'), { backgroundColor: '#181512', scale: 2, useCORS: true }).then(function(c) {
         downloadDataURL(zoneSlug() + '-kpis.png', c.toDataURL('image/png'));
       }).catch(function(){ toast('Screenshot failed'); });
     });
@@ -3064,7 +2942,7 @@
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
       var el = $('insights');
       var filename = zoneSlug() + '-dashboard.png';
-      html2canvas(el, { backgroundColor: '#1b1a19', scale: 2, useCORS: true }).then(function(c) {
+      html2canvas(el, { backgroundColor: '#0f0d0a', scale: 2, useCORS: true }).then(function(c) {
         downloadDataURL(filename, c.toDataURL('image/png'));
       }).catch(function(){ toast('Screenshot failed'); });
     });
