@@ -1657,7 +1657,7 @@
     var tmp = document.createElement('canvas');
     tmp.width = w; tmp.height = h;
     var ctx = tmp.getContext('2d');
-    ctx.fillStyle = '#252423';
+    ctx.fillStyle = '#181512';
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(chartCanvas, 0, 0);
     return tmp.toDataURL('image/png');
@@ -2862,7 +2862,7 @@
     $('kpisDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
-      html2canvas($('kpis-wrap'), { backgroundColor: '#252423', scale: 2, useCORS: true }).then(function(c) {
+      html2canvas($('kpis-wrap'), { backgroundColor: '#181512', scale: 2, useCORS: true }).then(function(c) {
         downloadDataURL(zoneSlug() + '-kpis.png', c.toDataURL('image/png'));
       }).catch(function(){ toast('Screenshot failed'); });
     });
@@ -2942,7 +2942,7 @@
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
       var el = $('insights');
       var filename = zoneSlug() + '-dashboard.png';
-      html2canvas(el, { backgroundColor: '#1b1a19', scale: 2, useCORS: true }).then(function(c) {
+      html2canvas(el, { backgroundColor: '#0f0d0a', scale: 2, useCORS: true }).then(function(c) {
         downloadDataURL(filename, c.toDataURL('image/png'));
       }).catch(function(){ toast('Screenshot failed'); });
     });
