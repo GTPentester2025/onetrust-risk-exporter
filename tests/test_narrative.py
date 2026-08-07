@@ -1,3 +1,4 @@
+import datetime as _dt
 from datetime import date
 from zone_reports.stats import compute_zone_stats
 from zone_reports.narrative import build_narrative, build_title, format_date_ordinal
@@ -23,3 +24,17 @@ def test_narrative_key_lines():
     # top cats appear with title-cased names and counts
     assert "Commercial (14)" in text
     assert "NCI (9)" in text
+
+def test_narrative_has_treated_line():
+    rows = [{"ID": f"R{i}", "Organization": "GHQ", "Category": "Security",
+             "Cat": "NCI", "Stage": "Monitoring" if i < 3 else "Assessment"}
+            for i in range(5)]
+    s = compute_zone_stats(rows, "GHQ")
+    lines = build_narrative(s, "7th August 2026")
+    joined = "\n".join(lines)
+    assert "3 of 5 risks (60%) are actively monitored (treated)" in joined
+
+def test_narrative_no_treated_line_when_empty():
+    s = compute_zone_stats([], "GHQ")
+    lines = build_narrative(s, "7th August 2026")
+    assert not any("monitored (treated)" in ln for ln in lines)

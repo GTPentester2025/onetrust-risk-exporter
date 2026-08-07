@@ -117,7 +117,7 @@ def build_deck(payload):
     from pptx import Presentation
     from pptx.util import Inches, Pt, Emu
     from pptx.chart.data import CategoryChartData
-    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 
     prs = Presentation()
     prs.slide_width = Inches(13.333)
@@ -197,14 +197,17 @@ def build_deck(payload):
             max(z["by_cat"].items(), key=lambda kv: kv[1])[0]
             if z["by_cat"] else "—"
         )
+        treated = z.get("treated", 0)
+        treated_pct = z.get("treated_pct", 0)
         kpi.text_frame.text = (
             f"Total {total}   |   Top domains: {top2}"
             f"   |   Top category: {_label(topcat)}"
+            f"  ·  Treated {treated} ({treated_pct}%)"
         )
         _set_font(kpi.text_frame.paragraphs[0], 10, THEME["cream"])
 
         # -------------------------------------------------------------------
-        # Pie chart  left=0.5, top=1.6, w=5.9, h=3.1
+        # Pie chart  left=0.4, top=1.6, w=4.3, h=3.0
         # -------------------------------------------------------------------
         if doms:
             cd = CategoryChartData()
@@ -212,8 +215,8 @@ def build_deck(payload):
             cd.add_series("Risks", [n for _, n in doms])
             gr = s.shapes.add_chart(
                 XL_CHART_TYPE.PIE,
-                Inches(0.5), Inches(1.6),
-                Inches(5.9), Inches(3.1),
+                Inches(0.4), Inches(1.6),
+                Inches(4.3), Inches(3.0),
                 cd,
             )
             chart = gr.chart
@@ -237,7 +240,7 @@ def build_deck(payload):
             dl.font.color.rgb = THEME["cream"]
 
         # -------------------------------------------------------------------
-        # Stacked bar  left=6.6, top=1.6, w=6.2, h=3.1
+        # Stacked bar  left=4.9, top=1.6, w=4.6, h=3.0
         # -------------------------------------------------------------------
         if doms and cats:
             cd = CategoryChartData()
@@ -249,8 +252,8 @@ def build_deck(payload):
                 )
             gr2 = s.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED,
-                Inches(6.6), Inches(1.6),
-                Inches(6.2), Inches(3.1),
+                Inches(4.9), Inches(1.6),
+                Inches(4.6), Inches(3.0),
                 cd,
             )
             chart2 = gr2.chart
@@ -266,7 +269,40 @@ def build_deck(payload):
                 series.data_labels.font.color.rgb = THEME["cream"]
 
         # -------------------------------------------------------------------
-        # Table  left=0.5, top=4.9, w=7.6, h=2.3
+        # Treated donut  left=9.7, top=1.6, w=3.2, h=3.0
+        # -------------------------------------------------------------------
+        openn = max(0, total - treated)
+        if total:
+            cd = CategoryChartData()
+            cd.categories = ["Treated", "Open"]
+            cd.add_series("Risks", (treated, openn))
+            gr3 = s.shapes.add_chart(
+                XL_CHART_TYPE.DOUGHNUT,
+                Inches(9.7), Inches(1.6),
+                Inches(3.2), Inches(3.0),
+                cd,
+            )
+            ch = gr3.chart
+            ch.has_title = True
+            ch.chart_title.text_frame.text = "Risk Treatment"
+            pts = ch.plots[0].series[0].points
+            pts[0].format.fill.solid()
+            pts[0].format.fill.fore_color.rgb = RGBColor(0x34, 0xD3, 0x99)
+            pts[1].format.fill.solid()
+            pts[1].format.fill.fore_color.rgb = RGBColor(0xE8, 0xC8, 0x10)
+            ch.has_legend = True
+            ch.legend.position = XL_LEGEND_POSITION.BOTTOM
+            ch.legend.include_in_layout = False
+            ch.font.color.rgb = THEME["cream"]
+            ch.font.size = Pt(9)
+            plot = ch.plots[0]
+            plot.has_data_labels = True
+            plot.data_labels.number_format = '0'
+            plot.data_labels.font.size = Pt(9)
+            plot.data_labels.font.color.rgb = THEME["cream"]
+
+        # -------------------------------------------------------------------
+        # Table  left=0.4, top=4.9, w=7.6, h=2.3
         # -------------------------------------------------------------------
         colcats = cats
         ncol = 2 + len(colcats)
@@ -276,7 +312,7 @@ def build_deck(payload):
 
         tbl_shape = s.shapes.add_table(
             nrow, ncol,
-            Inches(0.5), Inches(4.9),
+            Inches(0.4), Inches(4.9),
             Inches(7.6), Inches(2.3),
         )
         tbl = tbl_shape.table
@@ -327,9 +363,9 @@ def build_deck(payload):
                 _cell_fill(tbl.cell(1, ci), THEME["tile"])
 
         # -------------------------------------------------------------------
-        # Key Insights box  left=8.3, top=4.9, w=4.5, h=2.3
+        # Key Insights box  left=8.3, top=4.9, w=4.6, h=2.3
         # -------------------------------------------------------------------
-        nb = s.shapes.add_textbox(Inches(8.3), Inches(4.9), Inches(4.5), Inches(2.3))
+        nb = s.shapes.add_textbox(Inches(8.3), Inches(4.9), Inches(4.6), Inches(2.3))
         nb.text_frame.word_wrap = True
         tf_n = nb.text_frame
 

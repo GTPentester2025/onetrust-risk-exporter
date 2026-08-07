@@ -30,6 +30,9 @@ def zone_to_dict(zs, narrative_lines):
         "crosstab": zs.crosstab,
         "domain_pct": zs.domain_pct,
         "top_cats": zs.top_cats,
+        "treated": zs.treated,
+        "treated_pct": zs.treated_pct,
+        "by_stage": zs.by_stage,
         "narrative": narrative_lines,
     }
 

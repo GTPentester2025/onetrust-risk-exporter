@@ -9,9 +9,11 @@ import ppt_export
 def _payload():
     zones = {}
     for i, code in enumerate(["GHQ", "AFR", "SAZ", "MAZ", "NAZ", "APAC",
-                              "EUR", "BEES", "BEES-FT", "Overall"]):
+                              "EUR", "GRO", "Overall"]):
         zones[code] = {
             "organization": code, "total": 3,
+            "treated": 1, "treated_pct": 33,
+            "by_stage": [["Monitoring", 1], ["Assessment", 2]],
             "by_cat": {"COMMERCIAL": 2, "NCI": 1},
             "grand_by_cat": [["COMMERCIAL", 2], ["NCI", 1]],
             "by_domain": [["Security", 2], ["Privacy", 1]],
@@ -27,7 +29,7 @@ def _payload():
 def test_deck_has_title_plus_one_slide_per_zone():
     b = ppt_export.deck_to_bytes(_payload())
     prs = Presentation(io.BytesIO(b))
-    assert len(prs.slides) == 11  # title + 10 zones
+    assert len(prs.slides) == 10  # title + 9 zones
 
 def test_zone_slide_has_chart_and_table():
     prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(_payload())))
@@ -36,6 +38,13 @@ def test_zone_slide_has_chart_and_table():
     has_table = any(sh.has_table for sh in zone_slide.shapes)
     assert has_chart and has_table
 
+def test_zone_slide_has_three_charts():
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(_payload())))
+    slide = prs.slides[1]
+    charts = [sh for sh in slide.shapes if sh.has_chart]
+    assert len(charts) >= 3      # pie, stacked bar, treated donut
+    assert any(sh.has_table for sh in slide.shapes)
+
 def test_zero_total_zone_no_crash():
     """Regression: zero-total zone should not crash and should have no chart."""
     payload = _payload()
@@ -43,6 +52,8 @@ def test_zero_total_zone_no_crash():
     payload["zones"]["GHQ"] = {
         "organization": "GHQ",
         "total": 0,
+        "treated": 0, "treated_pct": 0,
+        "by_stage": [],
         "by_cat": {},
         "grand_by_cat": [],
         "by_domain": [],
@@ -56,8 +67,8 @@ def test_zero_total_zone_no_crash():
     b = ppt_export.deck_to_bytes(payload)
     prs = Presentation(io.BytesIO(b))
 
-    # Assert slide count is 11 (title + 10 zones)
-    assert len(prs.slides) == 11
+    # Assert slide count is 10 (title + 9 zones)
+    assert len(prs.slides) == 10
 
     # GHQ is the first zone slide (slides[1] since slides[0] is title)
     ghq_slide = prs.slides[1]
@@ -127,3 +138,47 @@ def test_dark_theme_background():
         fill = slide.background.fill
         assert fill.type == MSO_FILL.SOLID
         assert str(fill.fore_color.rgb) == "1B1A19"
+
+
+def test_treated_donut_colors_and_values():
+    """Regression: donut chart should show correct colors and values for Treated/Open."""
+    from pptx.enum.chart import XL_CHART_TYPE
+
+    payload = _payload()
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(payload)))
+
+    # First zone slide (index 1, since index 0 is title)
+    zone_slide = prs.slides[1]
+    zone_data = payload["zones"]["GHQ"]
+
+    # Find the doughnut chart among the slide's charts
+    donut_chart = None
+    for shape in zone_slide.shapes:
+        if shape.has_chart:
+            if shape.chart.chart_type == XL_CHART_TYPE.DOUGHNUT:
+                donut_chart = shape.chart
+                break
+
+    assert donut_chart is not None, "Doughnut chart not found on slide"
+
+    # Check categories
+    categories = list(donut_chart.plots[0].categories)
+    assert categories == ["Treated", "Open"], f"Expected ['Treated', 'Open'], got {categories}"
+
+    # Check values: (treated, total-treated)
+    values = donut_chart.plots[0].series[0].values
+    treated = zone_data["treated"]
+    total = zone_data["total"]
+    expected_values = (treated, total - treated)
+    assert values == expected_values, f"Expected {expected_values}, got {values}"
+
+    # Check point colors
+    points = donut_chart.plots[0].series[0].points
+
+    # Point 0: Treated (green #34D399)
+    color_0 = str(points[0].format.fill.fore_color.rgb)
+    assert color_0 == "34D399", f"Point 0 color: expected '34D399', got '{color_0}'"
+
+    # Point 1: Open (gold #E8C810)
+    color_1 = str(points[1].format.fill.fore_color.rgb)
+    assert color_1 == "E8C810", f"Point 1 color: expected 'E8C810', got '{color_1}'"

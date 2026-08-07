@@ -1,7 +1,7 @@
 """Placeholder-filled narrative text for a zone report, from ZoneStats."""
 
 # Cat/domain names are Title-cased for display; acronyms preserved.
-_ACRONYMS = {"NCI", "RAU", "GHQ", "BEES"}
+_ACRONYMS = {"NCI", "RAU", "GHQ", "BEES", "GRO"}
 
 # Connector phrase per domain rank (clamped to the last for deeper ranks).
 _PHRASES = ["heavily concentrated in", "primarily in", "led by", "distributed across"]
@@ -34,6 +34,10 @@ def build_narrative(stats, date_str):
         pct = round(100 * (n1 + n2) / total)
         lines.append(f"{_disp(c1)} ({n1} risks) and {_disp(c2)} ({n2} risks) "
                      f"together account for {pct}% of total exposure")
+
+    if getattr(stats, "treated", 0) is not None and total:
+        lines.append(f"{stats.treated} of {total} risks "
+                     f"({stats.treated_pct}%) are actively monitored (treated)")
 
     lines.append("")
     lines.append("Key Insights by Risk Domain")
