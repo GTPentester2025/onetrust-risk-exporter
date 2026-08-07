@@ -158,13 +158,29 @@ Change the `sel` line to `sel = [r for r in rows if _match_org(r.get("Organizati
 
 and return `ZoneStats(organization, total, by_cat, grand_by_cat, by_domain, crosstab, domain_pct, top_cats, treated, treated_pct, by_stage)`.
 
-In `build_zone_reports.py`, guard the loop at line ~21 so a list-valued org is skipped:
+In `build_zone_reports.py`, `iter_zone_reports` (line ~21) is PURE and works with GRO unchanged — do NOT skip it. But `zone_display_name` returns the raw org, which is a list for GRO; fix it to fall back to the sheet code for non-string orgs:
 
 ```python
-    for sheet, org in ZONES.items():
-        if not isinstance(org, (str, type(None))):
-            print(f"  (skipping {sheet}: multi-org zones not supported in the Excel builder)")
-            continue
+def zone_display_name(sheet, org):
+    if org is None:
+        return "Overall"
+    if not isinstance(org, str):     # list-valued (e.g. GRO)
+        return sheet
+    return org
+```
+
+(The Excel COM path in `zone_reports/excel.py` — `render_workbook`, only reached on a real non-dry-run Excel build — cannot set a multi-org pivot page filter for GRO. That is out of scope per the spec; it is not exercised by tests or the web app. Leave it; do not attempt to support GRO in the Excel pivot here.)
+
+Also update `tests/test_dryrun.py` line 11: replace the expected sheet set to the GRO shape:
+
+```python
+    assert {"GHQ","AFR","SAZ","MAZ","NAZ","APAC","EUR","GRO","Overall"} <= sheets
+```
+
+and add an assertion that GRO resolves to a clean display name:
+
+```python
+    assert zone_display_name("GRO", ["BEES", "BEES | FINTECH"]) == "GRO"
 ```
 
 - [ ] **Step 4: Run tests**
@@ -175,7 +191,7 @@ Expected: PASS (existing MAZ tests still pass; new tests pass).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add zone_reports/stats.py build_zone_reports.py tests/test_stats.py
+git add zone_reports/stats.py build_zone_reports.py tests/test_stats.py tests/test_dryrun.py
 git commit -m "feat: GRO zone merge + treated/by_stage analytics in stats"
 ```
 
