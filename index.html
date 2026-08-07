@@ -571,6 +571,11 @@
       padding: 8px;
     }
 
+    #aging-inner,
+    #bucket-inner {
+      height: 260px;
+    }
+
     /* ── Treatment & Aging 3-col row ── */
     .treatment-row {
       display: grid;
@@ -605,9 +610,6 @@
       margin: 0 auto;
     }
 
-    #treated-container {
-      min-height: 260px;
-    }
 
     .treated-empty {
       display: flex;
@@ -892,11 +894,6 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      margin-top: 8px;
-    }
-
-    .section-band:first-child {
-      margin-top: 0;
     }
 
     /* ── Zone heading — report header ── */
@@ -1492,7 +1489,7 @@
       <!-- Narrative tile — full width -->
       <div class="tile" id="narrative-panel">
         <div class="tile-header">
-          <div class="tile-title">Key Insights</div>
+          <div class="tile-title">Insights by Risk Domain</div>
           <div class="tile-toolbar">
             <button class="tool-btn" id="narrativeCopyBtn" type="button" aria-label="Copy narrative text" title="Copy narrative text">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
