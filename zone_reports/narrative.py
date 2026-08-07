@@ -39,6 +39,10 @@ def build_narrative(stats, date_str):
         lines.append(f"{stats.treated} of {total} risks "
                      f"({stats.treated_pct}%) are actively monitored (treated)")
 
+    if getattr(stats, "untreated", 0) and getattr(stats, "aged_count", 0):
+        lines.append(f"Untreated risks average {stats.avg_age} days old "
+                     f"(median {stats.median_age}); oldest {stats.oldest_age} days")
+
     lines.append("")
     lines.append("Key Insights by Risk Domain")
     for rank, (dom, dcount) in enumerate(stats.by_domain):

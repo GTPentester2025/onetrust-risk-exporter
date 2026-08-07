@@ -368,3 +368,13 @@ def test_payload_zone_set_has_gro():
     gro = p["zones"]["GRO"]
     assert gro["total"] == 1 and gro["treated"] == 1 and gro["treated_pct"] == 100
     assert isinstance(gro["by_stage"], list)
+
+def test_payload_has_aging_and_uses_generated_date():
+    rows = [{"ID":"1","Organization":"GHQ","Category":"Security","Cat":"NCI",
+             "Stage":"Assessment","Date created":"2026-06-08"}]
+    p = dashboard.build_payload(rows, view="V",
+                                generated_at=datetime.datetime(2026,8,7,6,0))
+    z = p["zones"]["GHQ"]
+    assert z["untreated"] == 1 and z["aged_count"] == 1
+    assert z["avg_age"] == 60 and z["oldest_age"] == 60
+    assert isinstance(z["age_by_domain"], list) and isinstance(z["age_buckets"], list)
