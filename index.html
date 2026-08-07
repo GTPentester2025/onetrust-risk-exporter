@@ -18,21 +18,23 @@
       --tile-2: #2f2e2d;
       --fg: #f3f2f1;
       --fg-muted: #c8c6c4;
-      --fg-dim: #979593;
+      --fg-dim: #9aa1ac;
       --border: #3b3a39;
       --gold: #e8c810;
       --gold-deep: #c99a1e;
       --live: #34d399;
       --danger: #f0736a;
       --radius: 8px;
-      --maxw: 1280px;
+      --maxw: 1240px;
       --font: "Fira Sans", "Segoe UI", system-ui, sans-serif;
       --mono: "Fira Code", ui-monospace, Consolas, monospace;
       /* ── Glass tokens ── */
       --glass: rgba(255,255,255,0.05);
-      --glass-border: rgba(255,255,255,0.09);
+      --glass-border: rgba(255,255,255,0.06);
       --glass-blur: blur(14px) saturate(1.2);
       --panel: rgba(20,16,10,0.55);
+      /* ── Shadow token (single) ── */
+      --shadow: 0 4px 16px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.05);
       /* ── Type scale (6 tokens) ── */
       --fs-xs:   0.72rem;   /* <=0.72: badges, chips, sort indicator, labels */
       --fs-sm:   0.80rem;   /* 0.73-0.85: tabs, buttons, table, ki-section */
@@ -51,7 +53,7 @@
       font-family: var(--font);
       background: linear-gradient(160deg, #14100a, #0a0806);
       color: var(--fg);
-      line-height: 1.5;
+      line-height: 1.55;
       min-height: 100vh;
       position: relative;
     }
@@ -112,7 +114,7 @@
       -webkit-backdrop-filter: var(--glass-blur);
       backdrop-filter: var(--glass-blur);
       border-bottom: 1px solid var(--glass-border);
-      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
       padding: 0 16px;
       display: flex;
       align-items: center;
@@ -413,10 +415,10 @@
     #main {
       max-width: var(--maxw);
       margin: 0 auto;
-      padding: 16px 24px 32px;
+      padding: 16px 24px 40px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 28px;
     }
 
     /* ── Tile ── */
@@ -425,8 +427,8 @@
       -webkit-backdrop-filter: var(--glass-blur);
       backdrop-filter: var(--glass-blur);
       border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
       overflow: hidden;
     }
 
@@ -434,16 +436,18 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px 0;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      min-height: 44px;
     }
 
     .tile-title {
-      font-family: var(--mono);
+      font-family: var(--font);
       font-size: var(--fs-xs);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.09em;
-      color: var(--fg-muted);
+      letter-spacing: 0.14em;
+      color: var(--fg-dim);
     }
 
     .tile-toolbar {
@@ -452,6 +456,7 @@
       gap: 4px;
       opacity: 0;
       transition: opacity 150ms;
+      margin-left: auto;
     }
 
     .tile:hover .tile-toolbar {
@@ -479,7 +484,7 @@
     }
 
     .tile-body {
-      padding: 12px 14px 14px;
+      padding: 16px;
     }
 
     /* ── KPI row ── */
@@ -494,13 +499,14 @@
       -webkit-backdrop-filter: var(--glass-blur);
       backdrop-filter: var(--glass-blur);
       border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      border-top: 3px solid var(--gold-deep);
-      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
-      padding: 14px 16px;
+      border-radius: 14px;
+      border-top: 2px solid var(--gold-deep);
+      box-shadow: var(--shadow);
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
+      min-height: 106px;
     }
 
     .kpi-card:hover { border-top-color: var(--gold); }
@@ -517,10 +523,10 @@
 
     .kpi-label {
       font-size: var(--fs-xs);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--fg-muted);
+      letter-spacing: 0.06em;
+      color: var(--fg-dim);
     }
 
     .kpi-value {
@@ -534,10 +540,11 @@
     }
 
     .kpi-sub {
-      font-size: var(--fs-sm);
-      color: var(--fg-muted);
+      font-size: var(--fs-xs);
+      color: var(--fg-dim);
       font-weight: 400;
-      margin-top: 1px;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
     }
 
     /* ── Chart row ── */
@@ -545,14 +552,29 @@
       display: grid;
       grid-template-columns: 1fr 2fr;
       gap: 16px;
+      align-items: stretch;
     }
 
     /* ── Chart tiles: lock height so zone switch never reflows ── */
-    #pie-panel   { min-height: 360px; }
-    #bar-panel   { min-height: 360px; }
-    #treated-panel { min-height: 340px; }
-    #aging-panel  { min-height: 340px; }
-    #bucket-panel { min-height: 340px; }
+    #pie-panel   { min-height: 360px; display: flex; flex-direction: column; }
+    #bar-panel   { min-height: 360px; display: flex; flex-direction: column; }
+    #treated-panel { min-height: 340px; display: flex; flex-direction: column; }
+    #aging-panel  { min-height: 340px; display: flex; flex-direction: column; }
+    #bucket-panel { min-height: 340px; display: flex; flex-direction: column; }
+
+    #pie-panel .tile-body,
+    #bar-panel .tile-body,
+    #treated-panel .tile-body,
+    #aging-panel .tile-body,
+    #bucket-panel .tile-body { flex: 1; display: flex; flex-direction: column; }
+
+    #pie-panel .chart-inner-panel,
+    #bar-panel .chart-inner-panel,
+    #treated-panel .chart-inner-panel { flex: 1; display: flex; flex-direction: column; }
+
+    #pie-panel .chart-container,
+    #bar-panel .chart-container,
+    #treated-panel .chart-container { flex: 1; }
 
     .chart-container {
       position: relative;
@@ -567,8 +589,8 @@
     .chart-inner-panel,
     .table-inner-panel {
       background: var(--panel);
-      border-radius: 12px;
-      padding: 8px;
+      border-radius: 10px;
+      padding: 10px;
     }
 
     #aging-inner,
@@ -642,7 +664,7 @@
     /* ── Narrative (export text; tile is #narrative-panel = Key Insights) ── */
     #narrative {
       font-size: var(--fs-base);
-      line-height: 1.65;
+      line-height: 1.55;
       color: var(--fg-muted);
     }
 
@@ -674,11 +696,11 @@
     }
 
     .ki-section {
-      font-size: var(--fs-sm);
+      font-size: var(--fs-xs);
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--fg);
+      color: var(--fg-dim);
       border-bottom: 1px solid var(--border);
       padding-bottom: 6px;
       margin: 4px 0 10px;
@@ -743,8 +765,9 @@
 
     .ki-domain-name {
       font-weight: 600;
-      color: var(--fg);
+      color: var(--fg-muted);
       font-size: var(--fs-base);
+      letter-spacing: -0.01em;
     }
 
     .ki-domain-top {
@@ -878,14 +901,14 @@
 
     /* ── Section labels (report banding) ── */
     .section-label {
-      font-family: var(--mono);
+      font-family: var(--font);
       font-size: var(--fs-xs);
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.14em;
       color: var(--fg-dim);
       padding: 0 2px 6px;
-      margin-top: 8px;
+      margin-bottom: 10px;
       border-bottom: 1px solid rgba(59,58,57,0.5);
     }
 
@@ -907,8 +930,8 @@
       font-family: var(--mono);
       font-size: var(--fs-lg);
       font-weight: 700;
-      color: var(--gold);
-      letter-spacing: 0.01em;
+      color: var(--fg);
+      letter-spacing: -0.01em;
       line-height: 1.2;
     }
 
@@ -941,8 +964,8 @@
       -webkit-backdrop-filter: var(--glass-blur);
       backdrop-filter: var(--glass-blur);
       border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
     }
 
     #empty h2 { font-size: var(--fs-md); font-weight: 600; color: var(--fg-muted); }
@@ -952,7 +975,7 @@
     #insights {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 28px;
     }
 
     /* ── Settings modal ── */
@@ -975,8 +998,8 @@
       -webkit-backdrop-filter: var(--glass-blur);
       backdrop-filter: var(--glass-blur);
       border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
       width: 440px;
       max-width: calc(100vw - 32px);
       max-height: calc(100vh - 64px);
@@ -1954,6 +1977,32 @@
     return lines.join('\n');
   }
 
+  // ── Shared tooltip defaults ────────────────────────────────────────────────
+  var TOOLTIP_DEFAULTS = {
+    backgroundColor: '#14100a',
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    titleColor: '#f3f2f1',
+    bodyColor: '#c8c6c4',
+    padding: 10,
+    cornerRadius: 8,
+    boxPadding: 4,
+    usePointStyle: true
+  };
+
+  // ── Shared legend defaults ─────────────────────────────────────────────────
+  var LEGEND_DEFAULTS = {
+    position: 'bottom',
+    labels: {
+      usePointStyle: true,
+      pointStyle: 'circle',
+      boxWidth: 8,
+      padding: 12,
+      color: '#c8c6c4',
+      font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }
+    }
+  };
+
   // ── Pie rendering ─────────────────────────────────────────────────────────
   function renderPie(z) {
     if (pieChart) { pieChart.destroy(); pieChart = null; }
@@ -1962,24 +2011,26 @@
     var colors = labels.map(function(_, i) { return seriesColor(i); });
     var ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
-      type: 'pie',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#252423', borderWidth: 2 }] },
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#1b1a19', borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
+        cutout: '58%',
+        layout: { padding: 8 },
         plugins: {
-          legend: { position: 'bottom', labels: { padding: 8, boxWidth: 11, font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
-          tooltip: { callbacks: { label: function(c) {
+          legend: Object.assign({}, LEGEND_DEFAULTS),
+          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, { callbacks: { label: function(c) {
             var tot = c.dataset.data.reduce(function(a,b){return a+b;},0);
             return ' '+c.label+': '+c.parsed+' ('+(tot?Math.round(100*c.parsed/tot):0)+'%)';
-          }}},
+          }}}),
           datalabels: {
             anchor: 'center',
             color: '#1b1a19',
-            font: { weight: '700', size: 11 },
+            font: { weight: '600', size: 11 },
             formatter: function(value, ctx) {
               var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
               var pct = total ? Math.round(100 * value / total) : 0;
-              return pct >= 5 ? pct + '%' : '';
+              return pct >= 6 ? pct + '%' : '';
             }
           }
         }
@@ -2053,13 +2104,25 @@
       data: { labels: domains, datasets: datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: 8 },
         scales: {
-          x: { stacked: true, ticks: { color: '#797775', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxRotation: 45 }, grid: { color: 'rgba(59,58,57,0.8)' } },
-          y: { stacked: true, ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } }, grid: { color: 'rgba(59,58,57,0.8)' } }
+          x: {
+            stacked: true,
+            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
+            grid: { display: false, drawBorder: false },
+            border: { display: false }
+          },
+          y: {
+            stacked: true,
+            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
+            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+            border: { display: false }
+          }
         },
+        datasets: { bar: { borderRadius: 0, borderWidth: 0, categoryPercentage: 0.7, barPercentage: 0.9 } },
         plugins: {
-          legend: { position: 'top', labels: { padding: 8, boxWidth: 11, font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
-          tooltip: {
+          legend: Object.assign({}, LEGEND_DEFAULTS),
+          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
             mode: 'index',
             callbacks: {
               label: function(item) {
@@ -2080,19 +2143,19 @@
               },
               footer: function(items) { return 'Total: ' + (colTotals[items[0].dataIndex] || 0); }
             }
-          },
+          }),
           datalabels: {
             labels: {
               segment: {
                 anchor: 'center', align: 'center',
-                color: '#1b1a19', font: { size: 11, weight: '700' },
+                color: '#1b1a19', font: { size: 11, weight: '600' },
                 formatter: function(value, ctx) {
                   return (value > 0 && maxTotal > 0 && value / maxTotal > 0.08) ? value : '';
                 }
               },
               total: {
                 anchor: 'end', align: 'end', offset: -2,
-                color: '#f3f2f1', font: { weight: '700', size: 11 },
+                color: '#f3f2f1', font: { weight: '600', size: 11 },
                 display: function(ctx) { return ctx.datasetIndex === ctx.chart.data.datasets.length - 1; },
                 formatter: function(value, ctx) { return colTotals[ctx.dataIndex] || ''; }
               }
@@ -2131,7 +2194,7 @@
         datasets: [{
           data: [treated, open],
           backgroundColor: ['#34D399', '#E8C810'],
-          borderColor: '#252423',
+          borderColor: '#1b1a19',
           borderWidth: 2
         }]
       },
@@ -2139,17 +2202,10 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: '62%',
+        layout: { padding: 8 },
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              padding: 8,
-              boxWidth: 11,
-              font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' },
-              color: '#c8c6c4'
-            }
-          },
-          tooltip: {
+          legend: Object.assign({}, LEGEND_DEFAULTS),
+          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
             callbacks: {
               label: function(c) {
                 var tot = c.dataset.data.reduce(function(a, b) { return a + b; }, 0);
@@ -2157,11 +2213,11 @@
                 return ' ' + c.label + ': ' + c.parsed + ' (' + pct + '%)';
               }
             }
-          },
+          }),
           datalabels: {
             anchor: 'center',
             color: '#1b1a19',
-            font: { weight: '700', size: 11 },
+            font: { weight: '600', size: 11 },
             formatter: function(value, ctx) {
               var tot = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
               var pct = tot ? Math.round(100 * value / tot) : 0;
@@ -2205,36 +2261,40 @@
           data: values,
           backgroundColor: colors,
           borderColor: 'transparent',
-          borderWidth: 0
+          borderWidth: 0,
+          borderRadius: 4
         }]
       },
       options: {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: 8 },
         scales: {
           x: {
-            title: { display: true, text: 'days', color: '#797775', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
-            ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } },
-            grid: { color: 'rgba(59,58,57,0.8)' }
+            title: { display: true, text: 'days', color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
+            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
+            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+            border: { display: false }
           },
           y: {
-            ticks: { color: '#c8c6c4', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
-            grid: { color: 'rgba(59,58,57,0.4)' }
+            ticks: { color: '#c8c6c4', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
+            grid: { display: false, drawBorder: false },
+            border: { display: false }
           }
         },
         plugins: {
           legend: { display: false },
-          tooltip: {
+          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
             callbacks: {
               label: function(c) { return ' ' + c.parsed.x + 'd avg (n=' + (agingData[c.dataIndex] ? agingData[c.dataIndex][2] : '') + ')'; }
             }
-          },
+          }),
           datalabels: {
             anchor: 'end',
             align: 'end',
             color: '#f3f2f1',
-            font: { size: 11, weight: '700', family: '"Fira Code",monospace' },
+            font: { size: 11, weight: '600', family: '"Fira Sans",system-ui,sans-serif' },
             formatter: function(value) { return value + 'd'; }
           }
         }
@@ -2275,34 +2335,39 @@
           data: values,
           backgroundColor: colors,
           borderColor: 'transparent',
-          borderWidth: 0
+          borderWidth: 0,
+          borderRadius: 4
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: 8 },
+        datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9 } },
         scales: {
           x: {
-            ticks: { color: '#c8c6c4', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
-            grid: { color: 'rgba(59,58,57,0.4)' }
+            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
+            grid: { display: false, drawBorder: false },
+            border: { display: false }
           },
           y: {
-            ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } },
-            grid: { color: 'rgba(59,58,57,0.8)' }
+            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
+            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+            border: { display: false }
           }
         },
         plugins: {
           legend: { display: false },
-          tooltip: {
+          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
             callbacks: {
               label: function(c) { return ' ' + c.parsed.y + ' risks'; }
             }
-          },
+          }),
           datalabels: {
             anchor: 'end',
             align: 'end',
             color: '#f3f2f1',
-            font: { size: 11, weight: '700', family: '"Fira Code",monospace' },
+            font: { size: 11, weight: '600', family: '"Fira Sans",system-ui,sans-serif' },
             formatter: function(value) { return value > 0 ? value : ''; }
           }
         }
