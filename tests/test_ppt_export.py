@@ -138,3 +138,47 @@ def test_dark_theme_background():
         fill = slide.background.fill
         assert fill.type == MSO_FILL.SOLID
         assert str(fill.fore_color.rgb) == "1B1A19"
+
+
+def test_treated_donut_colors_and_values():
+    """Regression: donut chart should show correct colors and values for Treated/Open."""
+    from pptx.enum.chart import XL_CHART_TYPE
+
+    payload = _payload()
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(payload)))
+
+    # First zone slide (index 1, since index 0 is title)
+    zone_slide = prs.slides[1]
+    zone_data = payload["zones"]["GHQ"]
+
+    # Find the doughnut chart among the slide's charts
+    donut_chart = None
+    for shape in zone_slide.shapes:
+        if shape.has_chart:
+            if shape.chart.chart_type == XL_CHART_TYPE.DOUGHNUT:
+                donut_chart = shape.chart
+                break
+
+    assert donut_chart is not None, "Doughnut chart not found on slide"
+
+    # Check categories
+    categories = list(donut_chart.plots[0].categories)
+    assert categories == ["Treated", "Open"], f"Expected ['Treated', 'Open'], got {categories}"
+
+    # Check values: (treated, total-treated)
+    values = donut_chart.plots[0].series[0].values
+    treated = zone_data["treated"]
+    total = zone_data["total"]
+    expected_values = (treated, total - treated)
+    assert values == expected_values, f"Expected {expected_values}, got {values}"
+
+    # Check point colors
+    points = donut_chart.plots[0].series[0].points
+
+    # Point 0: Treated (green #34D399)
+    color_0 = str(points[0].format.fill.fore_color.rgb)
+    assert color_0 == "34D399", f"Point 0 color: expected '34D399', got '{color_0}'"
+
+    # Point 1: Open (gold #E8C810)
+    color_1 = str(points[1].format.fill.fore_color.rgb)
+    assert color_1 == "E8C810", f"Point 1 color: expected 'E8C810', got '{color_1}'"

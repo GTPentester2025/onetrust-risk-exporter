@@ -363,7 +363,7 @@ def build_deck(payload):
                 _cell_fill(tbl.cell(1, ci), THEME["tile"])
 
         # -------------------------------------------------------------------
-        # Key Insights box  left=8.3, top=4.9, w=4.5, h=2.3
+        # Key Insights box  left=8.3, top=4.9, w=4.6, h=2.3
         # -------------------------------------------------------------------
         nb = s.shapes.add_textbox(Inches(8.3), Inches(4.9), Inches(4.6), Inches(2.3))
         nb.text_frame.word_wrap = True
