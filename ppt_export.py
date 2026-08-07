@@ -199,11 +199,14 @@ def build_deck(payload):
         )
         treated = z.get("treated", 0)
         treated_pct = z.get("treated_pct", 0)
-        kpi.text_frame.text = (
+        kpi_text = (
             f"Total {total}   |   Top domains: {top2}"
             f"   |   Top category: {_label(topcat)}"
             f"  ·  Treated {treated} ({treated_pct}%)"
         )
+        if z.get("untreated"):
+            kpi_text += f"  ·  Avg untreated age {z.get('avg_age', 0)}d"
+        kpi.text_frame.text = kpi_text
         _set_font(kpi.text_frame.paragraphs[0], 10, THEME["cream"])
 
         # -------------------------------------------------------------------
@@ -377,9 +380,31 @@ def build_deck(payload):
         for line in narrative:
             lines.extend(line.split("\n"))
 
-        if len(lines) > 16:
-            lines = lines[:16]
-            lines.append("…")
+        # Build aging extra lines
+        aging_lines = []
+        if z.get("untreated") and z.get("aged_count"):
+            aging_lines.append(
+                f"Untreated avg {z['avg_age']}d · median {z['median_age']}d"
+                f" · oldest {z['oldest_age']}d"
+            )
+            for d, avg, c in (z.get("age_by_domain") or [])[:3]:
+                aging_lines.append(f"{_label(d)}: {avg} d avg ({c})")
+
+        # Respect 16-line cap while always including the overall aging line
+        MAX_LINES = 16
+        if aging_lines:
+            # Reserve at least 1 slot for the overall aging line
+            available = MAX_LINES - len(aging_lines)
+            if available < 0:
+                available = 0
+            if len(lines) > available:
+                lines = lines[:available]
+                lines.append("…")
+            lines = lines + aging_lines
+        else:
+            if len(lines) > MAX_LINES:
+                lines = lines[:MAX_LINES]
+                lines.append("…")
 
         for line in lines:
             p_n = tf_n.add_paragraph()

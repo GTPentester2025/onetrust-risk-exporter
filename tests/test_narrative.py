@@ -38,3 +38,13 @@ def test_narrative_no_treated_line_when_empty():
     s = compute_zone_stats([], "GHQ")
     lines = build_narrative(s, "7th August 2026")
     assert not any("monitored (treated)" in ln for ln in lines)
+
+def test_narrative_has_aging_line():
+    import datetime as dt
+    rows = [{"ID": f"R{i}", "Organization": "GHQ", "Category": "Security",
+             "Cat": "NCI", "Stage": "Assessment",
+             "Date created": "2026-06-08"} for i in range(3)]
+    s = compute_zone_stats(rows, "GHQ", today=dt.date(2026,8,7))
+    lines = build_narrative(s, "7th August 2026")
+    assert any("Untreated risks average 60 days old (median 60); oldest 60 days" in ln
+               for ln in lines)

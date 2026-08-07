@@ -33,6 +33,13 @@ def zone_to_dict(zs, narrative_lines):
         "treated": zs.treated,
         "treated_pct": zs.treated_pct,
         "by_stage": zs.by_stage,
+        "untreated": zs.untreated,
+        "aged_count": zs.aged_count,
+        "avg_age": zs.avg_age,
+        "median_age": zs.median_age,
+        "oldest_age": zs.oldest_age,
+        "age_by_domain": zs.age_by_domain,
+        "age_buckets": zs.age_buckets,
         "narrative": narrative_lines,
     }
 
@@ -42,7 +49,7 @@ def build_payload(rows, view=None, generated_at=None, source=None):
     date_str = narrative.format_date_ordinal(generated_at.date())
     zones = {}
     for code, org in stats.ZONES.items():
-        zs = stats.compute_zone_stats(rows, org)
+        zs = stats.compute_zone_stats(rows, org, today=generated_at.date())
         lines = narrative.build_narrative(zs, date_str)
         zones[code] = zone_to_dict(zs, lines)
     payload = {

@@ -1,7 +1,9 @@
 # tests/test_stats.py
 import csv
+import datetime as dt
 from zone_reports.stats import (
     compute_zone_stats, select_top_cats, CAT_ORDER, ZONES, is_treated,
+    parse_date, AGE_BUCKETS,
 )
 
 # The MAZ cross-tab from the reference workbook (rows=domain, cols=Cat).
@@ -96,3 +98,51 @@ def test_zones_has_gro_not_bees():
     assert "GRO" in ZONES and "BEES" not in ZONES and "BEES-FT" not in ZONES
     assert ZONES["GRO"] == ["BEES", "BEES | FINTECH"]
     assert list(ZONES)[-1] == "Overall"
+
+
+def test_parse_date_variants():
+    assert parse_date("2026-06-15") == dt.date(2026, 6, 15)
+    assert parse_date("2026-06-15T08:30:00Z") == dt.date(2026, 6, 15)
+    assert parse_date("") is None and parse_date("garbage") is None and parse_date(None) is None
+
+
+def _aging_rows():
+    # today = 2026-08-07; untreated unless Monitoring
+    def r(i, org, dom, stage, created):
+        return {"ID": f"R{i}", "Organization": org, "Category": dom, "Cat": "NCI",
+                "Stage": stage, "Date created": created}
+    return [
+        r(1, "GHQ", "Security", "Assessment", "2026-08-01"),     # age 6, untreated
+        r(2, "GHQ", "Security", "Identification", "2026-06-08"), # age 60, untreated
+        r(3, "GHQ", "Privacy", "Remediation", "2026-02-08"),     # age 180, untreated
+        r(4, "GHQ", "Privacy", "Monitoring", "2026-01-01"),      # TREATED -> excluded
+        r(5, "GHQ", "Security", "Assessment", ""),               # untreated, no date
+        r(6, "GHQ", "Privacy", "Assessment", "2027-01-01"),      # future -> dropped
+    ]
+
+
+def test_aging_metrics():
+    today = dt.date(2026, 8, 7)
+    s = compute_zone_stats(_aging_rows(), "GHQ", today=today)
+    assert s.untreated == 5           # rows 1,2,3,5,6 (row4 treated)
+    assert s.aged_count == 3          # rows 1,2,3 (5 no date, 6 future)
+    assert s.avg_age == 82            # round((6+60+180)/3)=82
+    assert s.median_age == 60
+    assert s.oldest_age == 180
+
+
+def test_age_by_domain_desc():
+    today = dt.date(2026, 8, 7)
+    s = compute_zone_stats(_aging_rows(), "GHQ", today=today)
+    doms = {d: (a, c) for d, a, c in s.age_by_domain}
+    assert doms["Privacy"][0] == 180 and doms["Privacy"][1] == 1
+    assert doms["Security"][0] == 33   # round((6+60)/2)
+    assert s.age_by_domain[0][0] == "Privacy"   # oldest first
+
+
+def test_age_buckets():
+    today = dt.date(2026, 8, 7)
+    s = compute_zone_stats(_aging_rows(), "GHQ", today=today)
+    b = dict(s.age_buckets)
+    assert [x[0] for x in s.age_buckets] == AGE_BUCKETS
+    assert b["0-30"] == 1 and b["31-90"] == 1 and b["91-180"] == 1 and b["180+"] == 0

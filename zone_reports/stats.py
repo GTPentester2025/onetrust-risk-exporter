@@ -1,6 +1,8 @@
 # zone_reports/stats.py
 """Pure cross-tab computation for zone risk reports. No Excel dependency."""
 import csv
+import datetime
+import statistics
 from dataclasses import dataclass, field
 
 CAT_ORDER = ["COMMERCIAL", "LOGISTICS", "NCI", "PACKAGING", "TECHNOLOGY", "RAU", "Fees"]
@@ -20,6 +22,28 @@ ZONES = {
 
 TREATED_STAGES = {"monitoring"}
 
+AGE_BUCKETS = ["0-30", "31-90", "91-180", "180+"]
+
+
+def parse_date(s):
+    s = (s or "").strip()
+    if len(s) < 10:
+        return None
+    try:
+        return datetime.date.fromisoformat(s[:10])
+    except ValueError:
+        return None
+
+
+def _bucket(age):
+    if age <= 30:
+        return "0-30"
+    if age <= 90:
+        return "31-90"
+    if age <= 180:
+        return "91-180"
+    return "180+"
+
 
 def is_treated(stage):
     return (stage or "").strip().lower() in TREATED_STAGES
@@ -38,6 +62,13 @@ class ZoneStats:
     treated: int = 0
     treated_pct: int = 0
     by_stage: list = field(default_factory=list)
+    untreated: int = 0
+    aged_count: int = 0
+    avg_age: int = 0
+    median_age: int = 0
+    oldest_age: int = 0
+    age_by_domain: list = field(default_factory=list)
+    age_buckets: list = field(default_factory=list)
 
 
 def load_rows(path):
@@ -84,7 +115,8 @@ def _match_org(org_val, organization):
     return o == organization
 
 
-def compute_zone_stats(rows, organization=None):
+def compute_zone_stats(rows, organization=None, today=None):
+    today = today or datetime.date.today()
     sel = [r for r in rows if _match_org(r.get("Organization"), organization)]
     total = len(sel)
 
@@ -118,6 +150,33 @@ def compute_zone_stats(rows, organization=None):
     treated_pct = _pct(treated, total)
     by_stage = sorted(stage_total.items(), key=lambda kv: (-kv[1], kv[0]))
 
+    untreated_ct = 0
+    ages, dom_ages, bucket_ct = [], {}, {b: 0 for b in AGE_BUCKETS}
+    for r in sel:
+        if is_treated(r.get("Stage")):
+            continue
+        untreated_ct += 1
+        d = parse_date(r.get("Date created"))
+        if d is None:
+            continue
+        age = (today - d).days
+        if age < 0:
+            continue
+        ages.append(age)
+        dom = (r.get("Category") or "").strip() or "(blank)"
+        dom_ages.setdefault(dom, []).append(age)
+        bucket_ct[_bucket(age)] += 1
+    aged_count = len(ages)
+    avg_age = round(sum(ages) / aged_count) if aged_count else 0
+    median_age = round(statistics.median(ages)) if aged_count else 0
+    oldest_age = max(ages) if ages else 0
+    age_by_domain = sorted(
+        ((d, round(sum(a) / len(a)), len(a)) for d, a in dom_ages.items()),
+        key=lambda t: (-t[1], t[0]))
+    age_buckets = [(b, bucket_ct[b]) for b in AGE_BUCKETS]
+
     return ZoneStats(organization, total, by_cat, grand_by_cat,
                      by_domain, crosstab, domain_pct, top_cats,
-                     treated, treated_pct, by_stage)
+                     treated, treated_pct, by_stage,
+                     untreated_ct, aged_count, avg_age, median_age, oldest_age,
+                     age_by_domain, age_buckets)

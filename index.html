@@ -544,6 +544,8 @@
     #pie-panel   { min-height: 360px; }
     #bar-panel   { min-height: 360px; }
     #treated-panel { min-height: 340px; }
+    #aging-panel  { min-height: 340px; }
+    #bucket-panel { min-height: 340px; }
 
     .chart-container {
       position: relative;
@@ -579,6 +581,16 @@
     }
 
     .treated-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 260px;
+      color: var(--fg-dim);
+      font-size: 0.87rem;
+      font-style: italic;
+    }
+
+    .aging-empty {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1317,6 +1329,35 @@
       </div>
     </div>
 
+    <!-- Aging charts row -->
+    <div class="chart-row">
+      <!-- Risk Aging by Domain tile -->
+      <div class="tile" id="aging-panel">
+        <div class="tile-header">
+          <div class="tile-title">Risk Aging by Domain</div>
+          <div class="tile-toolbar"></div>
+        </div>
+        <div class="tile-body">
+          <div class="chart-inner-panel" id="aging-inner">
+            <canvas id="agingChart" role="img" aria-label="Horizontal bar chart: average untreated risk age by domain"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aging Buckets tile -->
+      <div class="tile" id="bucket-panel">
+        <div class="tile-header">
+          <div class="tile-title">Aging Buckets</div>
+          <div class="tile-toolbar"></div>
+        </div>
+        <div class="tile-body">
+          <div class="chart-inner-panel" id="bucket-inner">
+            <canvas id="bucketChart" role="img" aria-label="Bar chart: risk counts by aging bucket"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Key Insights tile (full-width, above table) -->
     <div class="tile" id="narrative-panel">
       <div class="tile-header">
@@ -1483,6 +1524,8 @@
   var pieChart = null;
   var barChart = null;
   var treatedChart = null;
+  var agingChart = null;
+  var bucketChart = null;
   var sortCol = null;
   var sortAsc = true;
   var lastRunSeen = null;   // for slow-cadence auto-refresh
@@ -1500,6 +1543,25 @@
 
   function seriesColor(i, cat) {
     return cat === '(blank)' ? '#797775' : PALETTE[i % PALETTE.length];
+  }
+
+  // ── Aging color ramp: #E8C810 -> #FFB74D -> #F0736A (v/maxv 0->0.5->1) ──
+  function ageColor(v, maxv) {
+    if (!maxv || maxv === 0) return '#E8C810';
+    var t = Math.max(0, Math.min(1, v / maxv));
+    var r, g, b;
+    if (t <= 0.5) {
+      var s = t / 0.5;
+      r = Math.round(0xe8 + s * (0xff - 0xe8));
+      g = Math.round(0xc8 + s * (0xb7 - 0xc8));
+      b = Math.round(0x10 + s * (0x4d - 0x10));
+    } else {
+      var s2 = (t - 0.5) / 0.5;
+      r = Math.round(0xff + s2 * (0xf0 - 0xff));
+      g = Math.round(0xb7 + s2 * (0x73 - 0xb7));
+      b = Math.round(0x4d + s2 * (0x6a - 0x4d));
+    }
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
   // Register datalabels plugin
@@ -1705,6 +1767,32 @@
     elKpis.appendChild(makeKpiCard('Risks Treated',
       treatedVal.toLocaleString(),
       treatedSub, true));
+    // Avg Untreated Age KPI
+    var untreatedCount = (z.untreated != null) ? z.untreated : 0;
+    var avgAge = (z.avg_age != null) ? z.avg_age : 0;
+    var medianAge = (z.median_age != null) ? z.median_age : 0;
+    var oldestAge = (z.oldest_age != null) ? z.oldest_age : 0;
+    var agingCard = document.createElement('div');
+    agingCard.className = 'kpi-card';
+    var agingLabel = document.createElement('div');
+    agingLabel.className = 'kpi-label';
+    agingLabel.textContent = 'Avg Untreated Age';
+    var agingValue = document.createElement('div');
+    agingValue.className = 'kpi-value';
+    agingValue.style.fontVariantNumeric = 'tabular-nums';
+    agingValue.textContent = avgAge + 'd';
+    var agingSub = document.createElement('div');
+    agingSub.className = 'kpi-sub';
+    if (untreatedCount === 0) {
+      agingValue.textContent = '0d';
+      agingSub.textContent = 'no untreated risks';
+    } else {
+      agingSub.textContent = 'median ' + medianAge + 'd · oldest ' + oldestAge + 'd · ' + untreatedCount + ' untreated';
+    }
+    agingCard.appendChild(agingLabel);
+    agingCard.appendChild(agingValue);
+    agingCard.appendChild(agingSub);
+    elKpis.appendChild(agingCard);
   }
 
   function makeKpiCard(label, value, sub, liveAccent) {
@@ -1905,6 +1993,143 @@
     });
   }
 
+  // ── Risk Aging by Domain chart ────────────────────────────────────────────
+  function renderAging(z) {
+    if (agingChart) { agingChart.destroy(); agingChart = null; }
+    var inner = $('aging-inner');
+    if (!inner) return;
+    var agingData = z.age_by_domain || [];
+    if (!agingData.length) {
+      inner.innerHTML = '<div class="aging-empty">No aging data for this zone.</div>';
+      return;
+    }
+    // Restore canvas if replaced
+    if (!$('agingChart')) {
+      var cv = document.createElement('canvas');
+      cv.id = 'agingChart';
+      cv.setAttribute('role', 'img');
+      cv.setAttribute('aria-label', 'Horizontal bar chart: average untreated risk age by domain');
+      inner.innerHTML = '';
+      inner.appendChild(cv);
+    }
+    var labels = agingData.map(function(row) { return dispName(row[0]); });
+    var values = agingData.map(function(row) { return row[1]; });
+    var maxv = values.reduce(function(a, b) { return Math.max(a, b); }, 1);
+    var colors = values.map(function(v) { return ageColor(v, maxv); });
+    var ctx = $('agingChart').getContext('2d');
+    agingChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderColor: 'transparent',
+          borderWidth: 0
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: { display: true, text: 'days', color: '#797775', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
+            ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } },
+            grid: { color: 'rgba(59,58,57,0.8)' }
+          },
+          y: {
+            ticks: { color: '#c8c6c4', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
+            grid: { color: 'rgba(59,58,57,0.4)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(c) { return ' ' + c.parsed.x + 'd avg (n=' + (agingData[c.dataIndex] ? agingData[c.dataIndex][2] : '') + ')'; }
+            }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'end',
+            color: '#f3f2f1',
+            font: { size: 10, weight: '600', family: '"Fira Code",monospace' },
+            formatter: function(value) { return value + 'd'; }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Aging Buckets chart ───────────────────────────────────────────────────
+  function renderBuckets(z) {
+    if (bucketChart) { bucketChart.destroy(); bucketChart = null; }
+    var inner = $('bucket-inner');
+    if (!inner) return;
+    var buckets = z.age_buckets || [];
+    var allZero = !buckets.length || buckets.every(function(b) { return b[1] === 0; });
+    if (allZero) {
+      inner.innerHTML = '<div class="aging-empty">No bucket data for this zone.</div>';
+      return;
+    }
+    // Restore canvas if replaced
+    if (!$('bucketChart')) {
+      var cv = document.createElement('canvas');
+      cv.id = 'bucketChart';
+      cv.setAttribute('role', 'img');
+      cv.setAttribute('aria-label', 'Bar chart: risk counts by aging bucket');
+      inner.innerHTML = '';
+      inner.appendChild(cv);
+    }
+    var BUCKET_COLORS = ['#34D399', '#E8C810', '#FFB74D', '#F0736A'];
+    var labels = buckets.map(function(b) { return b[0]; });
+    var values = buckets.map(function(b) { return b[1]; });
+    var colors = buckets.map(function(_, i) { return BUCKET_COLORS[i] || BUCKET_COLORS[BUCKET_COLORS.length - 1]; });
+    var ctx = $('bucketChart').getContext('2d');
+    bucketChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderColor: 'transparent',
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: { color: '#c8c6c4', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
+            grid: { color: 'rgba(59,58,57,0.4)' }
+          },
+          y: {
+            ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } },
+            grid: { color: 'rgba(59,58,57,0.8)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(c) { return ' ' + c.parsed.y + ' risks'; }
+            }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'end',
+            color: '#f3f2f1',
+            font: { size: 11, weight: '700', family: '"Fira Code",monospace' },
+            formatter: function(value) { return value > 0 ? value : ''; }
+          }
+        }
+      }
+    });
+  }
+
   function barCsvData(z) {
     var activeCats = activeCatsFor(z);
     var domains = (z.by_domain||[]).map(function(p){return p[0];});
@@ -1970,6 +2195,19 @@
     treatedLine.className = 'ki-concentration';
     treatedLine.innerHTML = '<span class="ki-num">' + treatedNum + '</span> of ' + z.total + ' risks (' + treatedPctNum + '%) are actively monitored (treated)';
     elNarrative.appendChild(treatedLine);
+
+    // Aging line (only when untreated > 0 and aged_count > 0)
+    var kiUntreated = (z.untreated != null) ? z.untreated : 0;
+    var kiAgedCount = (z.aged_count != null) ? z.aged_count : 0;
+    if (kiUntreated > 0 && kiAgedCount > 0) {
+      var kiAvgAge = (z.avg_age != null) ? z.avg_age : 0;
+      var kiMedianAge = (z.median_age != null) ? z.median_age : 0;
+      var kiOldestAge = (z.oldest_age != null) ? z.oldest_age : 0;
+      var agingLine = document.createElement('p');
+      agingLine.className = 'ki-concentration';
+      agingLine.innerHTML = 'Untreated risks average <span class="ki-num">' + kiAvgAge + '</span> days old (median ' + kiMedianAge + 'd; oldest ' + kiOldestAge + 'd)';
+      elNarrative.appendChild(agingLine);
+    }
 
     // Section heading (as in the PPT write-up)
     var section = document.createElement('h3');
@@ -2127,6 +2365,8 @@
     renderPie(z);
     renderBar(z);
     renderTreated(z);
+    renderAging(z);
+    renderBuckets(z);
     renderNarrative(z);
     renderTable(z);
   }

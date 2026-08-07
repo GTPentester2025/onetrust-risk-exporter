@@ -21,6 +21,10 @@ def _payload():
             "domain_pct": {"Security": 67, "Privacy": 33},
             "top_cats": {"Security": [["COMMERCIAL", 2]]},
             "narrative": ["A total of 3 risks identified across business units"],
+            "untreated": 2, "aged_count": 2, "avg_age": 90, "median_age": 85,
+            "oldest_age": 150,
+            "age_by_domain": [["Security", 120, 1], ["Privacy", 60, 1]],
+            "age_buckets": [["0-30", 0], ["31-90", 1], ["91-180", 1], ["180+", 0]],
         }
     return {"view": "TPRM Global View", "generated_at": "2026-08-05T06:00:00",
             "cat_order": ["COMMERCIAL", "LOGISTICS", "NCI", "PACKAGING",
@@ -182,3 +186,11 @@ def test_treated_donut_colors_and_values():
     # Point 1: Open (gold #E8C810)
     color_1 = str(points[1].format.fill.fore_color.rgb)
     assert color_1 == "E8C810", f"Point 1 color: expected 'E8C810', got '{color_1}'"
+
+
+def test_slide_has_aging_text():
+    prs = Presentation(io.BytesIO(ppt_export.deck_to_bytes(_payload())))
+    slide = prs.slides[1]
+    texts = " ".join(sh.text_frame.text for sh in slide.shapes if sh.has_text_frame)
+    assert "Avg untreated age 90d" in texts
+    assert "days old" in texts or "d avg" in texts   # aging appears in insights
