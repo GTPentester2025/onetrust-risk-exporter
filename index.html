@@ -28,6 +28,11 @@
       --maxw: 1280px;
       --font: "Fira Sans", "Segoe UI", system-ui, sans-serif;
       --mono: "Fira Code", ui-monospace, Consolas, monospace;
+      /* ── Glass tokens ── */
+      --glass: rgba(255,255,255,0.05);
+      --glass-border: rgba(255,255,255,0.09);
+      --glass-blur: blur(14px) saturate(1.2);
+      --panel: rgba(20,16,10,0.55);
     }
 
     /* ── Reset & base ── */
@@ -37,10 +42,54 @@
 
     body {
       font-family: var(--font);
-      background: var(--canvas);
+      background: linear-gradient(160deg, #14100a, #0a0806);
       color: var(--fg);
       line-height: 1.5;
       min-height: 100vh;
+      position: relative;
+    }
+
+    /* ── Ambient blob layer ── */
+    #bg-blobs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    #bg-blobs::before,
+    #bg-blobs::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+
+    #bg-blobs::before {
+      width: 60vw;
+      height: 60vw;
+      top: -20%;
+      left: -15%;
+      background: radial-gradient(ellipse at center, rgba(232,200,16,0.09) 0%, transparent 70%);
+    }
+
+    #bg-blobs::after {
+      width: 50vw;
+      height: 50vw;
+      bottom: -15%;
+      right: -10%;
+      background: radial-gradient(ellipse at center, rgba(52,211,153,0.06) 0%, transparent 70%);
+    }
+
+    /* ── All content above blobs ── */
+    #appbar,
+    #toast-container,
+    #banner,
+    #main,
+    #settings-scrim {
+      position: relative;
+      z-index: 1;
     }
 
     /* ── Focus visible ── */
@@ -52,8 +101,11 @@
 
     /* ── App bar ── */
     #appbar {
-      background: var(--tile);
-      border-bottom: 1px solid var(--border);
+      background: var(--glass);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
       padding: 0 16px;
       display: flex;
       align-items: center;
@@ -106,12 +158,19 @@
       font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
-      transition: color 150ms, border-color 150ms;
+      transition: color 200ms, border-color 200ms;
       flex-shrink: 0;
+      position: relative;
     }
 
     .zone-tab:hover {
       color: var(--fg);
+    }
+
+    .zone-tab:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: -2px;
+      border-radius: 3px;
     }
 
     .zone-tab[aria-selected="true"] {
@@ -350,15 +409,17 @@
       padding: 16px 24px 32px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
 
     /* ── Tile ── */
     .tile {
-      background: var(--tile);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: 0 1px 2px rgba(0,0,0,.4);
+      background: var(--glass);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
       overflow: hidden;
     }
 
@@ -418,14 +479,17 @@
     #kpis {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
+      gap: 16px;
     }
 
     .kpi-card {
-      background: var(--tile-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--glass);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
       border-top: 3px solid var(--gold-deep);
+      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
       padding: 14px 16px;
       display: flex;
       flex-direction: column;
@@ -458,6 +522,8 @@
       font-weight: 700;
       color: var(--gold);
       line-height: 1.1;
+      text-shadow: 0 1px 2px rgba(0,0,0,.5);
+      font-variant-numeric: tabular-nums;
     }
 
     .kpi-sub {
@@ -471,8 +537,13 @@
     .chart-row {
       display: grid;
       grid-template-columns: 1fr 2fr;
-      gap: 14px;
+      gap: 16px;
     }
+
+    /* ── Chart tiles: lock height so zone switch never reflows ── */
+    #pie-panel   { min-height: 360px; }
+    #bar-panel   { min-height: 360px; }
+    #treated-panel { min-height: 340px; }
 
     .chart-container {
       position: relative;
@@ -483,11 +554,19 @@
     #bar-container { height: 280px; }
     #treated-container { height: 260px; }
 
+    /* ── Inner panel: crisp data over glass ── */
+    .chart-inner-panel,
+    .table-inner-panel {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 8px;
+    }
+
     /* ── Treated row (single full-width chart row) ── */
     .treated-row {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 16px;
     }
 
     #treatedChart {
@@ -571,9 +650,9 @@
     }
 
     .ki-domain-card {
-      background: var(--tile-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--panel);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
       padding: 10px 12px;
       display: flex;
       flex-direction: column;
@@ -582,7 +661,7 @@
 
     .ki-domain-name {
       font-weight: 600;
-      color: var(--gold);
+      color: var(--fg);
       font-size: 0.87rem;
     }
 
@@ -595,8 +674,8 @@
 
     .ki-pct-badge {
       display: inline-block;
-      background: var(--tile-2);
-      border: 1px solid var(--border);
+      background: rgba(232,200,16,0.12);
+      border: 1px solid rgba(232,200,16,0.25);
       border-radius: 999px;
       padding: 1px 8px;
       font-family: var(--mono);
@@ -647,10 +726,10 @@
     }
 
     #table thead { position: sticky; top: 0; z-index: 2; }
-    #table thead th { position: sticky; top: 0; z-index: 2; background: var(--tile-2); }
+    #table thead th { position: sticky; top: 0; z-index: 2; background: rgba(20,16,10,0.85); }
 
     #table th {
-      background: var(--tile-2);
+      background: rgba(20,16,10,0.85);
       color: var(--fg-muted);
       font-family: var(--mono);
       font-size: 0.7rem;
@@ -700,8 +779,8 @@
     }
 
     #table tr:last-child td { border-bottom: none; }
-    #table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
-    #table tbody tr:hover td { background: rgba(232,200,16,0.06); }
+    #table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+    #table tbody tr:hover td { background: rgba(232,200,16,0.08); }
     #table td.total-col { font-family: var(--mono); font-weight: 700; color: var(--gold); }
     #table th.total-col { color: var(--gold); }
 
@@ -709,7 +788,7 @@
     .data-row {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 16px;
     }
 
     /* ── Table panel: clipped tile, scroll inside .table-scroll ── */
@@ -736,9 +815,12 @@
       gap: 14px;
       padding: 64px 24px;
       text-align: center;
-      background: var(--tile);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--glass);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
     }
 
     #empty h2 { font-size: 1.05rem; font-weight: 600; color: var(--fg-muted); }
@@ -748,7 +830,7 @@
     #insights {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
 
     /* ── Settings modal ── */
@@ -767,10 +849,12 @@
     }
 
     #settings {
-      background: var(--tile);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+      background: var(--glass);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
       width: 440px;
       max-width: calc(100vw - 32px);
       max-height: calc(100vh - 64px);
@@ -1018,7 +1102,7 @@
 
     /* ── Reduced motion ── */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
+      * {
         animation: none !important;
         transition: none !important;
       }
@@ -1026,6 +1110,9 @@
   </style>
 </head>
 <body>
+
+<!-- ── Ambient blob layer ── -->
+<div id="bg-blobs" aria-hidden="true"></div>
 
 <!-- ── App bar ── -->
 <header id="appbar">
@@ -1177,8 +1264,10 @@
           </div>
         </div>
         <div class="tile-body">
-          <div id="pie-container" class="chart-container">
-            <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+          <div class="chart-inner-panel">
+            <div id="pie-container" class="chart-container">
+              <canvas id="pie" role="img" aria-label="Pie chart: risk distribution by domain"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -1203,8 +1292,10 @@
           </div>
         </div>
         <div class="tile-body">
-          <div id="bar-container" class="chart-container">
-            <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+          <div class="chart-inner-panel">
+            <div id="bar-container" class="chart-container">
+              <canvas id="bar" role="img" aria-label="Stacked bar chart: risks by domain and category"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -1217,8 +1308,10 @@
           <div class="tile-title">Risk Treatment</div>
         </div>
         <div class="tile-body">
-          <div id="treated-container" class="chart-container">
-            <canvas id="treatedChart" role="img" aria-label="Donut chart: treated vs open risks"></canvas>
+          <div class="chart-inner-panel">
+            <div id="treated-container" class="chart-container">
+              <canvas id="treatedChart" role="img" aria-label="Donut chart: treated vs open risks"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -1270,11 +1363,13 @@
           </div>
         </div>
         <div class="tile-body">
-          <div class="table-scroll">
-            <table id="table" aria-label="Risk counts by domain and category">
-              <thead></thead>
-              <tbody></tbody>
-            </table>
+          <div class="table-inner-panel">
+            <div class="table-scroll">
+              <table id="table" aria-label="Risk counts by domain and category">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -1977,7 +2072,7 @@
       var row = document.createElement('tr');
       cells.forEach(function(val, i) {
         var td = document.createElement('td');
-        td.textContent = val;
+        td.textContent = (i > 0 && typeof val === 'number') ? val.toLocaleString() : val;
         if (i === cells.length-1) td.classList.add('total-col');
         row.appendChild(td);
       });
