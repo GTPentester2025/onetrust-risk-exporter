@@ -2018,7 +2018,7 @@
         cutout: '58%',
         layout: { padding: 8 },
         plugins: {
-          legend: LEGEND_DEFAULTS,
+          legend: Object.assign({}, LEGEND_DEFAULTS),
           tooltip: Object.assign({}, TOOLTIP_DEFAULTS, { callbacks: { label: function(c) {
             var tot = c.dataset.data.reduce(function(a,b){return a+b;},0);
             return ' '+c.label+': '+c.parsed+' ('+(tot?Math.round(100*c.parsed/tot):0)+'%)';
@@ -2119,9 +2119,9 @@
             border: { display: false }
           }
         },
-        datasets: { bar: { borderRadius: 4, borderWidth: 0, categoryPercentage: 0.7, barPercentage: 0.9 } },
+        datasets: { bar: { borderRadius: 0, borderWidth: 0, categoryPercentage: 0.7, barPercentage: 0.9 } },
         plugins: {
-          legend: LEGEND_DEFAULTS,
+          legend: Object.assign({}, LEGEND_DEFAULTS),
           tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
             mode: 'index',
             callbacks: {
@@ -2204,7 +2204,7 @@
         cutout: '62%',
         layout: { padding: 8 },
         plugins: {
-          legend: LEGEND_DEFAULTS,
+          legend: Object.assign({}, LEGEND_DEFAULTS),
           tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
             callbacks: {
               label: function(c) {
