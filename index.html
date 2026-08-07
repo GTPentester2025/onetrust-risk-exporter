@@ -1916,7 +1916,7 @@
   }
 
   // ── Display name helper ───────────────────────────────────────────────────
-  var DISP_UPPER = { 'NCI': true, 'RAU': true, 'GHQ': true, 'GRO': true };
+  var DISP_UPPER = { 'NCI': true, 'RAU': true, 'GHQ': true, 'BEES': true, 'GRO': true };
 
   function dispName(s) {
     if (!s) return s;
@@ -1968,7 +1968,7 @@
     var treatedPctNum = (z.treated_pct != null) ? z.treated_pct : 0;
     var treatedLine = document.createElement('p');
     treatedLine.className = 'ki-concentration';
-    treatedLine.innerHTML = '<span class="ki-num">' + treatedNum + '</span> of ' + z.total + ' (' + treatedPctNum + '%) actively monitored (treated)';
+    treatedLine.innerHTML = '<span class="ki-num">' + treatedNum + '</span> of ' + z.total + ' risks (' + treatedPctNum + '%) are actively monitored (treated)';
     elNarrative.appendChild(treatedLine);
 
     // Section heading (as in the PPT write-up)

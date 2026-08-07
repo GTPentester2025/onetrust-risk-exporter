@@ -7,7 +7,7 @@ Chains the three stages:
   2. refine_columns.py                         -> refined.csv      (+ Cat lookup)
   3. zone_reports (build_zone_reports)         -> <out>.xlsx       (zone sheets)
 
-Every zone sheet (GHQ, AFR, SAZ, MAZ, NAZ, APAC, EUR, BEES, BEES-FT) plus an
+Every zone sheet (GHQ, AFR, SAZ, MAZ, NAZ, APAC, EUR, GRO) plus an
 Overall sheet is built from scratch with a live PivotTable, pie + stacked-bar
 charts, gold banner title, and narrative.
 

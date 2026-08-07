@@ -1,7 +1,7 @@
 """Placeholder-filled narrative text for a zone report, from ZoneStats."""
 
 # Cat/domain names are Title-cased for display; acronyms preserved.
-_ACRONYMS = {"NCI", "RAU", "GHQ", "BEES"}
+_ACRONYMS = {"NCI", "RAU", "GHQ", "BEES", "GRO"}
 
 # Connector phrase per domain rank (clamped to the last for deeper ranks).
 _PHRASES = ["heavily concentrated in", "primarily in", "led by", "distributed across"]
