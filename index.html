@@ -486,8 +486,17 @@
     /* ── Treated row (single full-width chart row) ── */
     .treated-row {
       display: grid;
-      grid-template-columns: 1fr 2fr;
+      grid-template-columns: 1fr;
       gap: 14px;
+    }
+
+    #treatedChart {
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    #treated-container {
+      min-height: 260px;
     }
 
     .treated-empty {
