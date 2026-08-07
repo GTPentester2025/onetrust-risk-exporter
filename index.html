@@ -33,6 +33,13 @@
       --glass-border: rgba(255,255,255,0.09);
       --glass-blur: blur(14px) saturate(1.2);
       --panel: rgba(20,16,10,0.55);
+      /* ── Type scale (6 tokens) ── */
+      --fs-xs:   0.72rem;   /* <=0.72: badges, chips, sort indicator, labels */
+      --fs-sm:   0.80rem;   /* 0.73-0.85: tabs, buttons, table, ki-section */
+      --fs-base: 0.90rem;   /* 0.86-0.95: narrative, product mark, zone heading */
+      --fs-md:   1.00rem;   /* 0.96-1.10: banner dismiss, empty h2 */
+      --fs-lg:   1.25rem;   /* 1.11-1.4: (reserved / future headings) */
+      --fs-kpi:  1.75rem;   /* >=1.5: KPI values */
     }
 
     /* ── Reset & base ── */
@@ -119,7 +126,7 @@
     #product-mark {
       font-family: var(--mono);
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: var(--fs-base);
       color: var(--gold);
       letter-spacing: -0.02em;
       white-space: nowrap;
@@ -154,7 +161,7 @@
       background: transparent;
       color: var(--fg-muted);
       font-family: var(--mono);
-      font-size: 0.78rem;
+      font-size: var(--fs-sm);
       font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
@@ -200,7 +207,7 @@
       background: var(--tile-2);
       color: var(--fg-muted);
       font-family: var(--font);
-      font-size: 0.82rem;
+      font-size: var(--fs-sm);
       font-weight: 500;
       cursor: pointer;
       transition: color 150ms, border-color 150ms, background 150ms;
@@ -231,7 +238,7 @@
     /* ── Status chip ── */
     #status {
       font-family: var(--mono);
-      font-size: 0.72rem;
+      font-size: var(--fs-xs);
       font-weight: 500;
       white-space: nowrap;
       color: var(--fg-dim);
@@ -300,7 +307,7 @@
       background: transparent;
       color: var(--fg-muted);
       font-family: var(--font);
-      font-size: 0.82rem;
+      font-size: var(--fs-sm);
       cursor: pointer;
       text-align: left;
       transition: background 100ms, color 100ms;
@@ -367,7 +374,7 @@
 
     #banner-text {
       flex: 1;
-      font-size: 0.87rem;
+      font-size: var(--fs-base);
       color: var(--fg-muted);
     }
 
@@ -379,7 +386,7 @@
       background: transparent;
       color: var(--gold);
       font-family: var(--font);
-      font-size: 0.82rem;
+      font-size: var(--fs-sm);
       font-weight: 600;
       cursor: pointer;
       transition: background 150ms;
@@ -394,7 +401,7 @@
       color: var(--fg-dim);
       cursor: pointer;
       padding: 4px;
-      font-size: 1rem;
+      font-size: var(--fs-md);
       line-height: 1;
       display: inline-flex;
       align-items: center;
@@ -432,7 +439,7 @@
 
     .tile-title {
       font-family: var(--mono);
-      font-size: 0.68rem;
+      font-size: var(--fs-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.09em;
@@ -509,7 +516,7 @@
     }
 
     .kpi-label {
-      font-size: 0.69rem;
+      font-size: var(--fs-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -518,7 +525,7 @@
 
     .kpi-value {
       font-family: var(--mono);
-      font-size: 1.75rem;
+      font-size: var(--fs-kpi);
       font-weight: 700;
       color: var(--gold);
       line-height: 1.1;
@@ -527,7 +534,7 @@
     }
 
     .kpi-sub {
-      font-size: 0.77rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
       font-weight: 400;
       margin-top: 1px;
@@ -586,7 +593,7 @@
       justify-content: center;
       height: 260px;
       color: var(--fg-dim);
-      font-size: 0.87rem;
+      font-size: var(--fs-base);
       font-style: italic;
     }
 
@@ -596,7 +603,7 @@
       justify-content: center;
       height: 260px;
       color: var(--fg-dim);
-      font-size: 0.87rem;
+      font-size: var(--fs-base);
       font-style: italic;
     }
 
@@ -606,14 +613,14 @@
 
     /* ── Narrative (export text; tile is #narrative-panel = Key Insights) ── */
     #narrative {
-      font-size: 0.87rem;
+      font-size: var(--fs-base);
       line-height: 1.65;
       color: var(--fg-muted);
     }
 
     /* ── Key Insights panel ── */
     .ki-headline {
-      font-size: 0.95rem;
+      font-size: var(--fs-base);
       color: var(--fg-muted);
       margin-bottom: 6px;
       line-height: 1.5;
@@ -627,19 +634,19 @@
     }
 
     .ki-intro {
-      font-size: 0.85rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
       margin-bottom: 2px;
     }
 
     .ki-concentration {
-      font-size: 0.85rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
       margin-bottom: 12px;
     }
 
     .ki-section {
-      font-size: 0.8rem;
+      font-size: var(--fs-sm);
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -650,7 +657,7 @@
     }
 
     .ki-phrase {
-      font-size: 0.8rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
     }
 
@@ -674,7 +681,7 @@
     .ki-domain-name {
       font-weight: 600;
       color: var(--fg);
-      font-size: 0.87rem;
+      font-size: var(--fs-base);
     }
 
     .ki-domain-top {
@@ -691,13 +698,13 @@
       border-radius: 999px;
       padding: 1px 8px;
       font-family: var(--mono);
-      font-size: 0.72rem;
+      font-size: var(--fs-xs);
       font-weight: 600;
       color: var(--gold);
     }
 
     .ki-count {
-      font-size: 0.78rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
     }
 
@@ -712,13 +719,13 @@
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 1px 8px;
-      font-size: 0.72rem;
+      font-size: var(--fs-xs);
       color: var(--fg-muted);
       white-space: nowrap;
     }
 
     .ki-zero {
-      font-size: 0.87rem;
+      font-size: var(--fs-base);
       color: var(--fg-muted);
       font-style: italic;
     }
@@ -733,7 +740,7 @@
     #table {
       min-width: max-content;
       border-collapse: collapse;
-      font-size: 0.81rem;
+      font-size: var(--fs-sm);
       font-variant-numeric: tabular-nums;
     }
 
@@ -744,7 +751,7 @@
       background: rgba(20,16,10,0.85);
       color: var(--fg-muted);
       font-family: var(--mono);
-      font-size: 0.7rem;
+      font-size: var(--fs-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -765,7 +772,7 @@
       display: inline-block;
       margin-left: 4px;
       opacity: 0.5;
-      font-size: 0.65rem;
+      font-size: var(--fs-xs);
     }
 
     #table th.sort-active .sort-indicator {
@@ -809,7 +816,7 @@
     /* ── Zone heading ── */
     #zone-heading {
       font-family: var(--mono);
-      font-size: 0.95rem;
+      font-size: var(--fs-base);
       font-weight: 600;
       color: var(--gold);
       letter-spacing: 0.02em;
@@ -835,8 +842,8 @@
       box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
     }
 
-    #empty h2 { font-size: 1.05rem; font-weight: 600; color: var(--fg-muted); }
-    #empty p { font-size: 0.88rem; max-width: 360px; color: var(--fg-muted); }
+    #empty h2 { font-size: var(--fs-md); font-weight: 600; color: var(--fg-muted); }
+    #empty p { font-size: var(--fs-base); max-width: 360px; color: var(--fg-muted); }
 
     /* ── Insights container ── */
     #insights {
@@ -886,7 +893,7 @@
 
     #settings-head h2 {
       font-family: var(--mono);
-      font-size: 0.9rem;
+      font-size: var(--fs-base);
       font-weight: 700;
       color: var(--fg);
     }
@@ -917,7 +924,7 @@
     }
 
     .field-group label {
-      font-size: 0.7rem;
+      font-size: var(--fs-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -933,7 +940,7 @@
       background: var(--tile-2);
       color: var(--fg);
       font-family: var(--font);
-      font-size: 0.85rem;
+      font-size: var(--fs-sm);
       transition: border-color 150ms;
     }
 
@@ -948,7 +955,7 @@
     }
 
     .modal-section-label {
-      font-size: 0.68rem;
+      font-size: var(--fs-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -959,7 +966,7 @@
     }
 
     #cfgTestResult {
-      font-size: 0.8rem;
+      font-size: var(--fs-sm);
       min-height: 1.2em;
       padding: 2px 0;
     }
@@ -986,7 +993,7 @@
 
     #connStatusRow .conn-label {
       flex: 1;
-      font-size: 0.85rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
     }
 
@@ -1001,7 +1008,7 @@
 
     .files-status {
       flex: 1;
-      font-size: 0.83rem;
+      font-size: var(--fs-sm);
       color: var(--fg-muted);
     }
 
@@ -1014,7 +1021,7 @@
     }
 
     #filesMsg {
-      font-size: 0.78rem;
+      font-size: var(--fs-sm);
       color: var(--danger);
       min-height: 1em;
       padding: 2px 0;
@@ -1034,7 +1041,7 @@
       padding: 0 16px;
       border-radius: var(--radius);
       font-family: var(--font);
-      font-size: 0.83rem;
+      font-size: var(--fs-sm);
       font-weight: 600;
       cursor: pointer;
       transition: background 150ms, color 150ms;
@@ -1073,7 +1080,7 @@
       border: 1px solid var(--gold-deep);
       border-radius: var(--radius);
       color: var(--fg-muted);
-      font-size: 0.81rem;
+      font-size: var(--fs-sm);
       padding: 9px 14px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.55);
       animation: toast-in 200ms ease both;
@@ -1438,7 +1445,7 @@
       <div id="connStatusRow" class="hidden">
         <span class="conn-dot" aria-hidden="true"></span>
         <span class="conn-label" id="connStatusLabel">Configured</span>
-        <button class="modal-btn" id="connEditBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Edit</button>
+        <button class="modal-btn" id="connEditBtn" type="button" style="height:28px;padding:0 12px;font-size:var(--fs-sm);">Edit</button>
       </div>
 
       <!-- Edit wrap: inputs + Test (always shown when not configured; hidden behind status row when configured) -->
@@ -1471,18 +1478,18 @@
       <div class="files-row">
         <span id="catStatus" class="files-status absent">Not uploaded</span>
         <input type="file" id="catFileInput" accept=".xlsx" style="display:none" aria-label="Upload supplier categories xlsx">
-        <button class="modal-btn" id="catUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Upload</button>
-        <button class="modal-btn hidden" id="catDownloadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;border:1px solid var(--border);background:var(--tile-2);color:var(--fg-muted);">Download</button>
+        <button class="modal-btn" id="catUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:var(--fs-sm);">Upload</button>
+        <button class="modal-btn hidden" id="catDownloadBtn" type="button" style="height:28px;padding:0 12px;font-size:var(--fs-sm);border:1px solid var(--border);background:var(--tile-2);color:var(--fg-muted);">Download</button>
       </div>
-      <div style="font-size:0.7rem;color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Supplier categories (.xlsx)</div>
+      <div style="font-size:var(--fs-xs);color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Supplier categories (.xlsx)</div>
 
       <!-- Views config row -->
       <div class="files-row">
         <span id="viewsStatus" class="files-status absent">Not uploaded</span>
         <input type="file" id="viewsFileInput" accept=".json,application/json" style="display:none" aria-label="Upload views config json">
-        <button class="modal-btn" id="viewsUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:0.78rem;">Upload</button>
+        <button class="modal-btn" id="viewsUploadBtn" type="button" style="height:28px;padding:0 12px;font-size:var(--fs-sm);">Upload</button>
       </div>
-      <div style="font-size:0.7rem;color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Views config (.json)</div>
+      <div style="font-size:var(--fs-xs);color:var(--fg-dim);margin-top:-4px;margin-bottom:2px">Views config (.json)</div>
 
       <div id="filesMsg" aria-live="polite"></div>
 
@@ -1832,7 +1839,7 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { padding: 8, boxWidth: 11, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
+          legend: { position: 'bottom', labels: { padding: 8, boxWidth: 11, font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
           tooltip: { callbacks: { label: function(c) {
             var tot = c.dataset.data.reduce(function(a,b){return a+b;},0);
             return ' '+c.label+': '+c.parsed+' ('+(tot?Math.round(100*c.parsed/tot):0)+'%)';
@@ -1863,6 +1870,7 @@
     if (barChart) { barChart.destroy(); barChart = null; }
     var domains = (z.by_domain || []).map(function(p) { return p[0]; });
     var activeCats = activeCatsFor(z);
+
     // Compute column totals (max total for threshold calculation)
     var colTotals = domains.map(function(dom) {
       return (z.by_domain || []).reduce(function(acc, p) {
@@ -1871,14 +1879,45 @@
     });
     var maxTotal = colTotals.reduce(function(a, b) { return Math.max(a, b); }, 1);
 
-    var datasets = activeCats.map(function(cat, catIdx) {
+    // ── Top-5 + Other logic ──────────────────────────────────────────────
+    // Compute each cat's grand total across all domains
+    var catTotals = {};
+    activeCats.forEach(function(cat) {
+      catTotals[cat] = domains.reduce(function(sum, dom) {
+        return sum + ((z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
+      }, 0);
+    });
+    // Sort cats by grand total descending
+    var sortedCats = activeCats.slice().sort(function(a, b) { return catTotals[b] - catTotals[a]; });
+    var TOP_N = 5;
+    var topCats = sortedCats.slice(0, TOP_N);
+    var otherCats = sortedCats.slice(TOP_N);
+
+    // Build datasets: top-5 get palette colors; Other gets gray
+    var datasets = topCats.map(function(cat, idx) {
       return {
         label: catLabel(cat),
         data: domains.map(function(dom) { return (z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0; }),
-        backgroundColor: seriesColor(catIdx, cat),
+        backgroundColor: seriesColor(idx, cat),
         borderColor: 'transparent', borderWidth: 0
       };
     });
+
+    // "Other" series (only if there are folded cats)
+    if (otherCats.length > 0) {
+      var otherData = domains.map(function(dom) {
+        return otherCats.reduce(function(sum, cat) {
+          return sum + ((z.crosstab && z.crosstab[dom] && z.crosstab[dom][cat]) || 0);
+        }, 0);
+      });
+      datasets.push({
+        label: 'Other',
+        data: otherData,
+        backgroundColor: '#797775',
+        borderColor: 'transparent', borderWidth: 0
+      });
+    }
+
     var ctx = $('bar').getContext('2d');
     barChart = new Chart(ctx, {
       type: 'bar',
@@ -1886,11 +1925,11 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { stacked: true, ticks: { color: '#797775', font: { size: 9, family: '"Fira Sans",system-ui,sans-serif' }, maxRotation: 45 }, grid: { color: 'rgba(59,58,57,0.8)' } },
+          x: { stacked: true, ticks: { color: '#797775', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxRotation: 45 }, grid: { color: 'rgba(59,58,57,0.8)' } },
           y: { stacked: true, ticks: { color: '#797775', font: { size: 10, family: '"Fira Code",monospace' } }, grid: { color: 'rgba(59,58,57,0.8)' } }
         },
         plugins: {
-          legend: { position: 'top', labels: { padding: 8, boxWidth: 11, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
+          legend: { position: 'top', labels: { padding: 8, boxWidth: 11, font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }, color: '#c8c6c4' } },
           tooltip: {
             mode: 'index',
             callbacks: {
@@ -1905,14 +1944,14 @@
             labels: {
               segment: {
                 anchor: 'center', align: 'center',
-                color: '#1b1a19', font: { size: 10, weight: '600' },
+                color: '#1b1a19', font: { size: 11, weight: '700' },
                 formatter: function(value, ctx) {
-                  return (value > 0 && maxTotal > 0 && value / maxTotal > 0.06) ? value : '';
+                  return (value > 0 && maxTotal > 0 && value / maxTotal > 0.08) ? value : '';
                 }
               },
               total: {
                 anchor: 'end', align: 'end', offset: -2,
-                color: '#f3f2f1', font: { weight: '700', size: 10 },
+                color: '#f3f2f1', font: { weight: '700', size: 11 },
                 display: function(ctx) { return ctx.datasetIndex === ctx.chart.data.datasets.length - 1; },
                 formatter: function(value, ctx) { return colTotals[ctx.dataIndex] || ''; }
               }
@@ -1965,7 +2004,7 @@
             labels: {
               padding: 8,
               boxWidth: 11,
-              font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' },
+              font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' },
               color: '#c8c6c4'
             }
           },
@@ -2054,7 +2093,7 @@
             anchor: 'end',
             align: 'end',
             color: '#f3f2f1',
-            font: { size: 10, weight: '600', family: '"Fira Code",monospace' },
+            font: { size: 11, weight: '700', family: '"Fira Code",monospace' },
             formatter: function(value) { return value + 'd'; }
           }
         }
