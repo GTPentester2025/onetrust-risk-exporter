@@ -266,6 +266,8 @@ def _handle_ppt():
 
 
 def handle_get(path):
+    # Strip query string so /?theme=light etc. still serve index.html
+    path = path.split("?", 1)[0]
     if path == "/" or path == "/index.html":
         try:
             return 200, "text/html; charset=utf-8", INDEX.read_bytes()

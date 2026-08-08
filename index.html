@@ -33,6 +33,14 @@
       --gold-soft: rgba(232,200,16,0.12);
       --live:      #34d399;
       --danger:    #f0736a;
+      /* accent-text: gold text on canvas (dark: bright gold; light: deep amber for contrast) */
+      --accent-text: #e8c810;
+      /* KPI per-card accent tokens */
+      --kpi-gold:  #E8C810;
+      --kpi-teal:  #5FA8A0;
+      --kpi-mauve: #A08BA8;
+      --kpi-green: #34D399;
+      --kpi-clay:  #BF6E5E;
       /* Shape */
       --radius: 8px;
       --radius-sm: 6px;
@@ -46,6 +54,23 @@
       --fs-md:   0.98rem;
       --fs-lg:   1.15rem;
       --fs-kpi:  1.55rem;
+    }
+
+    /* ── Light mode token overrides ── */
+    [data-theme="light"] {
+      --canvas:   #f4f2ee;
+      --tile:     #ffffff;
+      --tile-2:   #faf9f7;
+      --tile-3:   #f0ede8;
+      --fg:       #1b1a19;
+      --fg-muted: #514d45;
+      --fg-dim:   #6e6a61;
+      --border:      rgba(0,0,0,0.10);
+      --border-2:    rgba(0,0,0,0.16);
+      --gold-soft: rgba(232,200,16,0.14);
+      /* gold stays same for fills/bars; only text gets darkened */
+      --accent-text: #8a6d0a;
+      /* KPI accent tokens stay same — muted palette works on white */
     }
 
     /* ═══════════════════════════════════════════════════════════════════════
@@ -73,8 +98,8 @@
        3. TOP BAR (slim, sticky)
        ═══════════════════════════════════════════════════════════════════════ */
     #appbar {
-      background: #131029;
-      background: linear-gradient(180deg, #16130d, #141109);
+      background: var(--tile);
+      background: linear-gradient(180deg, var(--tile), var(--canvas));
       border-bottom: 1px solid var(--border);
       padding: 0 18px;
       display: flex;
@@ -90,7 +115,7 @@
       font-family: var(--mono);
       font-weight: 700;
       font-size: var(--fs-base);
-      color: var(--gold);
+      color: var(--accent-text);
       letter-spacing: -0.02em;
       white-space: nowrap;
       padding-right: 16px;
@@ -144,7 +169,7 @@
     }
 
     .zone-tab[aria-selected="true"] {
-      color: var(--gold);
+      color: var(--accent-text);
       border-color: rgba(232,200,16,0.45);
       background: var(--gold-soft);
       font-weight: 700;
@@ -189,14 +214,14 @@
     }
 
     #refreshBtn {
-      color: var(--gold-deep);
-      border-color: var(--gold-deep);
+      color: var(--accent-text);
+      border-color: var(--accent-text);
     }
 
     #refreshBtn:hover:not(:disabled) {
-      color: var(--gold);
-      border-color: var(--gold);
-      background: rgba(232,200,16,0.08);
+      color: var(--accent-text);
+      border-color: var(--accent-text);
+      background: var(--gold-soft);
     }
 
     /* ── Status chip ── */
@@ -218,7 +243,7 @@
     }
 
     #status.running {
-      color: var(--gold);
+      color: var(--accent-text);
     }
 
     #status.done {
@@ -251,9 +276,9 @@
       right: 0;
       top: calc(100% + 4px);
       background: var(--tile);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-2);
       border-radius: var(--radius);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
       min-width: 180px;
       z-index: 200;
       overflow: hidden;
@@ -282,7 +307,8 @@
       color: var(--fg);
     }
 
-    /* ── Settings icon btn ── */
+    /* ── Theme toggle + Settings icon btn ── */
+    #themeBtn,
     #settingsBtn {
       display: inline-flex;
       align-items: center;
@@ -299,10 +325,17 @@
       flex-shrink: 0;
     }
 
+    #themeBtn:hover,
     #settingsBtn:hover {
       color: var(--fg);
       border-color: var(--fg-dim);
     }
+
+    /* Sun shown in dark mode; Moon shown in light mode */
+    #themeBtn .icon-moon { display: none; }
+    #themeBtn .icon-sun  { display: block; }
+    [data-theme="light"] #themeBtn .icon-sun  { display: none; }
+    [data-theme="light"] #themeBtn .icon-moon { display: block; }
 
     /* ── Spinner ── */
     .spinner {
@@ -322,8 +355,8 @@
 
     /* ── Onboarding banner ── */
     #banner {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--tile-2);
+      border: 1px solid var(--border-2);
       border-radius: var(--radius);
       padding: 12px 16px;
       display: flex;
@@ -345,10 +378,10 @@
     #banner-open {
       flex-shrink: 0;
       padding: 6px 14px;
-      border: 1px solid rgba(201,162,39,0.35);
+      border: 1px solid var(--border-2);
       border-radius: var(--radius);
       background: transparent;
-      color: var(--gold-deep);
+      color: var(--accent-text);
       font-family: var(--font);
       font-size: var(--fs-sm);
       font-weight: 500;
@@ -356,7 +389,7 @@
       transition: background 150ms, color 150ms;
     }
 
-    #banner-open:hover { background: rgba(201,162,39,0.08); color: var(--gold); }
+    #banner-open:hover { background: var(--gold-soft); color: var(--accent-text); }
 
     #banner-dismiss {
       flex-shrink: 0;
@@ -496,11 +529,25 @@
       left: 0; top: 10px; bottom: 10px;
       width: 3px;
       border-radius: 0 2px 2px 0;
-      background: var(--gold-deep);
+      background: var(--kpi-gold);
     }
 
-    .kpi-card.kpi-live::before { background: var(--live); }
-    .kpi-card.kpi-live .kpi-value { color: var(--live); }
+    /* Per-card accent modifier classes */
+    .kpi-accent-gold::before  { background: var(--kpi-gold);  }
+    .kpi-accent-teal::before  { background: var(--kpi-teal);  }
+    .kpi-accent-mauve::before { background: var(--kpi-mauve); }
+    .kpi-accent-green::before { background: var(--kpi-green); }
+    .kpi-accent-clay::before  { background: var(--kpi-clay);  }
+
+    .kpi-accent-gold  .kpi-value { color: var(--kpi-gold);  }
+    .kpi-accent-teal  .kpi-value { color: var(--kpi-teal);  }
+    .kpi-accent-mauve .kpi-value { color: var(--kpi-mauve); }
+    .kpi-accent-green .kpi-value { color: var(--kpi-green); }
+    .kpi-accent-clay  .kpi-value { color: var(--kpi-clay);  }
+
+    /* legacy class kept for compatibility */
+    .kpi-card.kpi-live::before { background: var(--kpi-green); }
+    .kpi-card.kpi-live .kpi-value { color: var(--kpi-green); }
 
     .kpi-label {
       font-size: var(--fs-xs);
@@ -515,7 +562,7 @@
       font-family: var(--mono);
       font-size: var(--fs-kpi);
       font-weight: 700;
-      color: var(--gold);
+      color: var(--accent-text);
       line-height: 1.05;
       font-variant-numeric: tabular-nums;
     }
@@ -603,7 +650,7 @@
 
     .ki-num {
       font-family: var(--mono);
-      color: var(--gold);
+      color: var(--accent-text);
       font-weight: 700;
     }
 
@@ -756,10 +803,10 @@
     }
 
     #table thead { position: sticky; top: 0; z-index: 2; }
-    #table thead th { position: sticky; top: 0; z-index: 2; background: #14110c; }
+    #table thead th { position: sticky; top: 0; z-index: 2; background: var(--tile); }
 
     #table th {
-      background: #14110c;
+      background: var(--tile);
       color: var(--fg-muted);
       font-family: var(--mono);
       font-size: var(--fs-xs);
@@ -809,7 +856,7 @@
     }
 
     #table tr:last-child td { border-bottom: none; }
-    #table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    #table tbody tr:nth-child(even) td { background: var(--tile-2); }
     #table tbody tr:hover td { background: var(--gold-soft); }
     #table td.total-col { font-family: var(--mono); font-weight: 700; color: var(--gold); }
     #table th.total-col { color: var(--gold); }
@@ -873,7 +920,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.45);
       z-index: 500;
       align-items: center;
       justify-content: center;
@@ -887,7 +934,7 @@
       background: var(--tile);
       border: 1px solid var(--border-2);
       border-radius: var(--radius);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.22);
       width: 440px;
       max-width: calc(100vw - 32px);
       max-height: calc(100vh - 64px);
@@ -1075,7 +1122,7 @@
       color: #1b1a19;
     }
 
-    #cfgSave:hover { background: #f0d020; }
+    #cfgSave:hover { background: var(--gold); filter: brightness(1.08); }
 
     /* ── Toast ── */
     #toast-container {
@@ -1091,12 +1138,12 @@
 
     .toast {
       background: var(--tile-2);
-      border: 1px solid var(--gold-deep);
+      border: 1px solid var(--border-2);
       border-radius: var(--radius);
       color: var(--fg-muted);
       font-size: var(--fs-sm);
       padding: 9px 14px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.18);
       animation: toast-in 200ms ease both;
       pointer-events: none;
       max-width: 260px;
@@ -1153,6 +1200,16 @@
       }
     }
   </style>
+  <!-- Early theme init: apply saved/URL theme before first paint -->
+  <script>
+  (function(){
+    var params = new URLSearchParams(window.location.search);
+    var urlTheme = params.get('theme');
+    var theme = urlTheme || localStorage.getItem('theme') || 'dark';
+    if (theme === 'light') document.documentElement.dataset.theme = 'light';
+    // dark is default (no attribute needed)
+  })();
+  </script>
 </head>
 <body>
 
@@ -1215,6 +1272,22 @@
         </button>
       </div>
     </div>
+
+    <!-- Theme toggle: sun/moon, icon changes with current theme -->
+    <button id="themeBtn" type="button" aria-label="Toggle light/dark theme">
+      <!-- Sun icon (shown in dark mode) -->
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <!-- Moon icon (shown in light mode) -->
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
 
     <button id="settingsBtn" type="button" aria-label="Settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1571,6 +1644,36 @@
     '#D6B56A','#4E8AC9','#B5766B','#6BAF8D','#9C8FBF','#77746C'
   ];
 
+  // ── Theme-aware chart color helper ─────────────────────────────────────────
+  function isLightTheme() {
+    return document.documentElement.dataset.theme === 'light';
+  }
+
+  function chartTheme() {
+    if (isLightTheme()) {
+      return {
+        tick:         '#6e6a61',
+        legendText:   '#514d45',
+        grid:         'rgba(0,0,0,0.07)',
+        tooltipBg:    '#ffffff',
+        tooltipBorder:'rgba(0,0,0,0.12)',
+        tooltipTitle: '#1b1a19',
+        tooltipBody:  '#514d45',
+        canvasBg:     '#ffffff'
+      };
+    }
+    return {
+      tick:         '#9aa1ac',
+      legendText:   '#c8c6c4',
+      grid:         'rgba(255,255,255,0.05)',
+      tooltipBg:    '#14100a',
+      tooltipBorder:'rgba(255,255,255,0.12)',
+      tooltipTitle: '#f3f2f1',
+      tooltipBody:  '#c8c6c4',
+      canvasBg:     '#181512'
+    };
+  }
+
   function seriesColor(i, cat) {
     // For top-5 datasets: use distinct palette color by index (not seriesColor's special case).
     // Only the folded "Other" series uses gray '#797775'.
@@ -1671,7 +1774,7 @@
     var tmp = document.createElement('canvas');
     tmp.width = w; tmp.height = h;
     var ctx = tmp.getContext('2d');
-    ctx.fillStyle = '#181512';
+    ctx.fillStyle = chartTheme().canvasBg;
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(chartCanvas, 0, 0);
     return tmp.toDataURL('image/png');
@@ -1783,14 +1886,14 @@
   function renderKpis(z) {
     elKpis.innerHTML = '';
     elKpis.appendChild(makeKpiCard('Total Risks', String(z.total),
-      z.total === 0 ? 'No risks identified' : 'across all categories'));
+      z.total === 0 ? 'No risks identified' : 'across all categories', 'gold'));
     if (z.total > 0 && z.by_domain && z.by_domain.length >= 1) {
       var top2 = z.by_domain.slice(0, 2);
       var top2Names = top2.map(function(p) { return p[0]; });
       var top2Pct = top2.reduce(function(s, p) { return s + (z.domain_pct[p[0]] || 0); }, 0);
-      elKpis.appendChild(makeKpiCard('Top Domains Combined', top2Pct + '%', top2Names.join(' + ')));
+      elKpis.appendChild(makeKpiCard('Top Domains Combined', top2Pct + '%', top2Names.join(' + '), 'teal'));
     } else {
-      elKpis.appendChild(makeKpiCard('Top Domains', '—', 'No domain data'));
+      elKpis.appendChild(makeKpiCard('Top Domains', '—', 'No domain data', 'teal'));
     }
     if (z.total > 0 && z.by_cat && Object.keys(z.by_cat).length > 0) {
       var topCat = null, topCount = -1;
@@ -1799,9 +1902,9 @@
       });
       elKpis.appendChild(makeKpiCard('Top Category',
         topCat ? catLabel(topCat) : '—',
-        topCat ? (topCount + ' risk' + (topCount !== 1 ? 's' : '')) : 'No data'));
+        topCat ? (topCount + ' risk' + (topCount !== 1 ? 's' : '')) : 'No data', 'mauve'));
     } else {
-      elKpis.appendChild(makeKpiCard('Top Category', '—', 'No category data'));
+      elKpis.appendChild(makeKpiCard('Top Category', '—', 'No category data', 'mauve'));
     }
     // Risks Treated KPI (green accent)
     var treatedVal = (z.treated != null) ? z.treated : 0;
@@ -1811,14 +1914,14 @@
       : '0 / 0 · 0%';
     elKpis.appendChild(makeKpiCard('Risks Treated',
       treatedVal.toLocaleString(),
-      treatedSub, true));
+      treatedSub, 'green'));
     // Avg Untreated Age KPI
     var untreatedCount = (z.untreated != null) ? z.untreated : 0;
     var avgAge = (z.avg_age != null) ? z.avg_age : 0;
     var medianAge = (z.median_age != null) ? z.median_age : 0;
     var oldestAge = (z.oldest_age != null) ? z.oldest_age : 0;
     var agingCard = document.createElement('div');
-    agingCard.className = 'kpi-card';
+    agingCard.className = 'kpi-card kpi-accent-clay';
     var agingLabel = document.createElement('div');
     agingLabel.className = 'kpi-label';
     agingLabel.textContent = 'Avg Untreated Age';
@@ -1840,9 +1943,12 @@
     elKpis.appendChild(agingCard);
   }
 
-  function makeKpiCard(label, value, sub, liveAccent) {
+  function makeKpiCard(label, value, sub, accent) {
     var card = document.createElement('div');
-    card.className = 'kpi-card' + (liveAccent ? ' kpi-live' : '');
+    var accentClass = accent ? ' kpi-accent-' + accent : '';
+    // legacy kpi-live for green (backward compat)
+    if (accent === 'green') accentClass += ' kpi-live';
+    card.className = 'kpi-card' + accentClass;
     var l = document.createElement('div'); l.className = 'kpi-label'; l.textContent = label;
     var v = document.createElement('div'); v.className = 'kpi-value'; v.textContent = value;
     var s = document.createElement('div'); s.className = 'kpi-sub'; s.textContent = sub;
@@ -1864,31 +1970,37 @@
     return lines.join('\n');
   }
 
-  // ── Shared tooltip defaults ────────────────────────────────────────────────
-  var TOOLTIP_DEFAULTS = {
-    backgroundColor: '#14100a',
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    titleColor: '#f3f2f1',
-    bodyColor: '#c8c6c4',
-    padding: 10,
-    cornerRadius: 8,
-    boxPadding: 4,
-    usePointStyle: true
-  };
+  // ── Shared tooltip defaults (function, evaluated at render time) ───────────
+  function tooltipDefaults() {
+    var ct = chartTheme();
+    return {
+      backgroundColor: ct.tooltipBg,
+      borderColor: ct.tooltipBorder,
+      borderWidth: 1,
+      titleColor: ct.tooltipTitle,
+      bodyColor: ct.tooltipBody,
+      padding: 10,
+      cornerRadius: 8,
+      boxPadding: 4,
+      usePointStyle: true
+    };
+  }
 
-  // ── Shared legend defaults ─────────────────────────────────────────────────
-  var LEGEND_DEFAULTS = {
-    position: 'bottom',
-    labels: {
-      usePointStyle: true,
-      pointStyle: 'circle',
-      boxWidth: 8,
-      padding: 12,
-      color: '#c8c6c4',
-      font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }
-    }
-  };
+  // ── Shared legend defaults (function, evaluated at render time) ────────────
+  function legendDefaults() {
+    var ct = chartTheme();
+    return {
+      position: 'bottom',
+      labels: {
+        usePointStyle: true,
+        pointStyle: 'circle',
+        boxWidth: 8,
+        padding: 12,
+        color: ct.legendText,
+        font: { size: 11, family: '"Fira Sans",system-ui,sans-serif' }
+      }
+    };
+  }
 
   // ── Pie rendering ─────────────────────────────────────────────────────────
   function renderPie(z) {
@@ -1896,17 +2008,18 @@
     var labels = (z.by_domain || []).map(function(p) { return p[0]; });
     var data   = (z.by_domain || []).map(function(p) { return p[1]; });
     var colors = labels.map(function(_, i) { return seriesColor(i); });
+    var ct = chartTheme();
     var ctx = $('pie').getContext('2d');
     pieChart = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#181512', borderWidth: 2 }] },
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: ct.canvasBg, borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         cutout: '68%',
         layout: { padding: 8 },
         plugins: {
-          legend: Object.assign({}, LEGEND_DEFAULTS),
-          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, { callbacks: { label: function(c) {
+          legend: legendDefaults(),
+          tooltip: Object.assign({}, tooltipDefaults(), { callbacks: { label: function(c) {
             var tot = c.dataset.data.reduce(function(a,b){return a+b;},0);
             return ' '+c.label+': '+c.parsed+' ('+(tot?Math.round(100*c.parsed/tot):0)+'%)';
           }}}),
@@ -1988,6 +2101,7 @@
       });
     }
 
+    var ct = chartTheme();
     var ctx = $('bar').getContext('2d');
     barChart = new Chart(ctx, {
       type: 'bar',
@@ -1998,21 +2112,21 @@
         scales: {
           x: {
             stacked: true,
-            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
+            ticks: { color: ct.tick, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
             grid: { display: false, drawBorder: false },
             border: { display: false }
           },
           y: {
             stacked: true,
-            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
-            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+            ticks: { color: ct.tick, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
+            grid: { color: ct.grid, drawBorder: false },
             border: { display: false }
           }
         },
         datasets: { bar: { borderRadius: 0, borderWidth: 0, categoryPercentage: 0.7, barPercentage: 0.9 } },
         plugins: {
-          legend: Object.assign({}, LEGEND_DEFAULTS),
-          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
+          legend: legendDefaults(),
+          tooltip: Object.assign({}, tooltipDefaults(), {
             mode: 'index',
             callbacks: {
               label: function(item) {
@@ -2049,7 +2163,7 @@
               },
               total: {
                 anchor: 'end', align: 'end', offset: -2,
-                color: '#f3f2f1', font: { weight: '600', size: 11 },
+                color: function() { return isLightTheme() ? '#1b1a19' : '#f3f2f1'; }, font: { weight: '600', size: 11 },
                 display: function(ctx) { return ctx.datasetIndex === ctx.chart.data.datasets.length - 1; },
                 formatter: function(value, ctx) { return colTotals[ctx.dataIndex] || ''; }
               }
@@ -2080,6 +2194,7 @@
     }
     var treated = (z.treated != null) ? z.treated : 0;
     var open = z.total - treated;
+    var ct = chartTheme();
     var ctx = $('treatedChart').getContext('2d');
     treatedChart = new Chart(ctx, {
       type: 'doughnut',
@@ -2088,7 +2203,7 @@
         datasets: [{
           data: [treated, open],
           backgroundColor: ['#34D399', '#C9A227'],
-          borderColor: '#181512',
+          borderColor: ct.canvasBg,
           borderWidth: 2
         }]
       },
@@ -2098,8 +2213,8 @@
         cutout: '72%',
         layout: { padding: 8 },
         plugins: {
-          legend: Object.assign({}, LEGEND_DEFAULTS),
-          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
+          legend: legendDefaults(),
+          tooltip: Object.assign({}, tooltipDefaults(), {
             callbacks: {
               label: function(c) {
                 var tot = c.dataset.data.reduce(function(a, b) { return a + b; }, 0);
@@ -2149,6 +2264,7 @@
     var values = agingData.map(function(row) { return row[1]; });
     var maxv = values.reduce(function(a, b) { return Math.max(a, b); }, 1);
     var colors = values.map(function(v) { return ageColor(v, maxv); });
+    var ct = chartTheme();
     var ctx = $('agingChart').getContext('2d');
     agingChart = new Chart(ctx, {
       type: 'bar',
@@ -2169,20 +2285,20 @@
         layout: { padding: 8 },
         scales: {
           x: {
-            title: { display: true, text: 'days', color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
-            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
-            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+            title: { display: true, text: 'days', color: ct.tick, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' } },
+            ticks: { color: ct.tick, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
+            grid: { color: ct.grid, drawBorder: false },
             border: { display: false }
           },
           y: {
-            ticks: { color: '#c8c6c4', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
+            ticks: { color: ct.legendText, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
             grid: { display: false, drawBorder: false },
             border: { display: false }
           }
         },
         plugins: {
           legend: { display: false },
-          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
+          tooltip: Object.assign({}, tooltipDefaults(), {
             callbacks: {
               label: function(c) { return ' ' + c.parsed.x + 'd avg (n=' + (agingData[c.dataIndex] ? agingData[c.dataIndex][2] : '') + ')'; }
             }
@@ -2190,7 +2306,7 @@
           datalabels: {
             anchor: 'end',
             align: 'end',
-            color: '#f3f2f1',
+            color: function() { return isLightTheme() ? '#1b1a19' : '#f3f2f1'; },
             font: { size: 11, weight: '600', family: '"Fira Sans",system-ui,sans-serif' },
             formatter: function(value) { return value + 'd'; }
           }
@@ -2223,6 +2339,7 @@
     var labels = buckets.map(function(b) { return b[0]; });
     var values = buckets.map(function(b) { return b[1]; });
     var colors = buckets.map(function(_, i) { return BUCKET_COLORS[i] || BUCKET_COLORS[BUCKET_COLORS.length - 1]; });
+    var ct = chartTheme();
     var ctx = $('bucketChart').getContext('2d');
     bucketChart = new Chart(ctx, {
       type: 'bar',
@@ -2243,19 +2360,19 @@
         datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9 } },
         scales: {
           x: {
-            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
+            ticks: { color: ct.tick, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, autoSkip: true, maxRotation: 0 },
             grid: { display: false, drawBorder: false },
             border: { display: false }
           },
           y: {
-            ticks: { color: '#9aa1ac', font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
-            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+            ticks: { color: ct.tick, font: { size: 10, family: '"Fira Sans",system-ui,sans-serif' }, maxTicksLimit: 6 },
+            grid: { color: ct.grid, drawBorder: false },
             border: { display: false }
           }
         },
         plugins: {
           legend: { display: false },
-          tooltip: Object.assign({}, TOOLTIP_DEFAULTS, {
+          tooltip: Object.assign({}, tooltipDefaults(), {
             callbacks: {
               label: function(c) { return ' ' + c.parsed.y + ' risks'; }
             }
@@ -2263,7 +2380,7 @@
           datalabels: {
             anchor: 'end',
             align: 'end',
-            color: '#f3f2f1',
+            color: function() { return isLightTheme() ? '#1b1a19' : '#f3f2f1'; },
             font: { size: 11, weight: '600', family: '"Fira Sans",system-ui,sans-serif' },
             formatter: function(value) { return value > 0 ? value : ''; }
           }
@@ -2886,7 +3003,8 @@
     $('kpisDownloadBtn').addEventListener('click', function() {
       if (!requireData()) return;
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
-      html2canvas($('kpis-wrap'), { backgroundColor: '#181512', scale: 2, useCORS: true }).then(function(c) {
+      var tileBg = getComputedStyle(document.documentElement).getPropertyValue('--tile').trim() || '#181512';
+      html2canvas($('kpis-wrap'), { backgroundColor: tileBg, scale: 2, useCORS: true }).then(function(c) {
         downloadDataURL(zoneSlug() + '-kpis.png', c.toDataURL('image/png'));
       }).catch(function(){ toast('Screenshot failed'); });
     });
@@ -2966,7 +3084,8 @@
       if (typeof html2canvas === 'undefined') { toast('html2canvas not available'); return; }
       var el = $('insights');
       var filename = zoneSlug() + '-dashboard.png';
-      html2canvas(el, { backgroundColor: '#0f0d0a', scale: 2, useCORS: true }).then(function(c) {
+      var canvasBg = getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim() || '#0f0d0a';
+      html2canvas(el, { backgroundColor: canvasBg, scale: 2, useCORS: true }).then(function(c) {
         downloadDataURL(filename, c.toDataURL('image/png'));
       }).catch(function(){ toast('Screenshot failed'); });
     });
@@ -3070,6 +3189,24 @@
     });
   }
 
+  // ── Theme toggle ──────────────────────────────────────────────────────────
+  function setupThemeToggle() {
+    var btn = $('themeBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      var isLight = document.documentElement.dataset.theme === 'light';
+      if (isLight) {
+        delete document.documentElement.dataset.theme;
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.dataset.theme = 'light';
+        localStorage.setItem('theme', 'light');
+      }
+      // Rebuild charts so colors update
+      if (payload) render();
+    });
+  }
+
   // ── Page init ─────────────────────────────────────────────────────────────
   function init() {
     buildZoneTabs();
@@ -3081,6 +3218,7 @@
     setupTileHandlers();
     setupExportMenu();
     setupSettings();
+    setupThemeToggle();
 
     // On load: GET /api/config (banner, never fill secret)
     fetch('/api/config').then(function(r){ return r.json(); }).then(function(cfg) {
